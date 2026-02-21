@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Квиз по Сетевым Технологиям и Архитектуре</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px 0;
+            text-align: center;
+        }
+
+        .quiz-container {
+            background-color: white;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 700px;
+        }
+        
+        #start-screen h1 {
+            margin-bottom: 20px;
+        }
+
+        #section-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .section-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            transition: background-color 0.3s, transform 0.1s;
+            line-height: 1.4;
+        }
+
+        .section-btn:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+
+        .section-btn:active {
+            transform: scale(0.98);
+        }
+        
+        #progress-container {
+            width: 100%;
+            height: 15px;
+            background-color: #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+        #progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #28a745;
+            border-radius: 10px;
+            transition: width 0.4s ease-in-out;
+        }
+        #progress-text {
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            font-weight: bold;
+            color: #555;
+            text-align: right;
+        }
+
+        #quiz-header {
+            margin-bottom: 20px;
+        }
+
+        #quiz-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        #back-btn {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            margin-bottom: 15px;
+        }
+
+        #back-btn:hover {
+            background-color: #5a6268;
+        }
+
+        #question-container {
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: 500;
+            min-height: 60px;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+
+        #question-container.fade-out {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+
+        #answer-buttons {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.4s ease-in-out, transform 0.4s ease-in-out;
+        }
+
+        #answer-buttons.fade-out {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .btn-animate-in {
+            animation: slideInUp 0.3s ease-out forwards;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .btn.correct {
+            background-color: #28a745;
+            animation: pulse 0.6s ease-in-out;
+        }
+
+        .btn.incorrect {
+            background-color: #dc3545;
+            animation: shake 0.5s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        .btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s, transform 0.1s;
+            line-height: 1.4;
+        }
+
+        .btn:hover:not(:disabled) {
+            background-color: #0056b3;
+        }
+        
+        .btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <!-- Стартовый экран -->
+        <div id="start-screen">
+            <h1>Подготовка к экзамену</h1>
+            <p>Выберите модуль для тестирования:</p>
+            <div id="section-selection">
+                <button class="section-btn" onclick="startQuizSection(1)">
+                    <strong>Модуль 1</strong><br>Вопросы 1 - 50
+                </button>
+                <button class="section-btn" onclick="startQuizSection(2)">
+                    <strong>Модуль 2</strong><br>Вопросы 51 - 100
+                </button>
+                <button class="section-btn" onclick="startQuizSection(3)">
+                    <strong>Модуль 3</strong><br>Вопросы 101 - 150
+                </button>
+                <button class="section-btn" onclick="startQuizSection(4)">
+                    <strong>Модуль 4</strong><br>Вопросы 151 - 200
+                </button>
+                <button class="section-btn" onclick="startQuizSection(5)">
+                    <strong>Модуль 5</strong><br>Вопросы 200 - 250
+                </button>
+                <button class="section-btn" onclick="startQuizSection(6)">
+                    <strong>Модуль 6</strong><br>Вопросы 251 - 300
+                </button>
+            </div>
+        </div>
+
+        <!-- Экран квиза -->
+        <div id="quiz-screen" class="hidden">
+            <div id="quiz-header">
+                <button id="back-btn" onclick="goBackToMenu()">← Назад к выбору</button>
+                <div id="quiz-title"></div>
+            </div>
+            <div id="progress-text"></div>
+            <div id="progress-container">
+                <div id="progress-bar"></div>
+            </div>
+            <div id="question-container"></div>
+            <div id="answer-buttons"></div>
+        </div>
+        
+        <!-- Финальный экран -->
+        <div id="result-screen" class="hidden">
+            <h1>Результаты квиза</h1>
+            <div id="statistics">
+                <div style="display: flex; justify-content: space-around; margin: 20px 0; font-size: 1.2em;">
+                    <div style="text-align: center; padding: 15px; background-color: #d4edda; border-radius: 8px; color: #155724;">
+                        <div style="font-size: 2em; font-weight: bold;" id="correct-count">0</div>
+                        <div>Правильно</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background-color: #f8d7da; border-radius: 8px; color: #721c24;">
+                        <div style="font-size: 2em; font-weight: bold;" id="incorrect-count">0</div>
+                        <div>Неправильно</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background-color: #d1ecf1; border-radius: 8px; color: #0c5460;">
+                        <div style="font-size: 2em; font-weight: bold;" id="accuracy-percent">0%</div>
+                        <div>Точность</div>
+                    </div>
+                </div>
+            </div>
+            <p id="result-text">Квиз завершен!</p>
+            <div id="incorrect-questions-list" class="hidden" style="margin: 20px 0; padding: 15px; background-color: #f8f9fa; border-radius: 8px; text-align: left;">
+                <h3 style="color: #dc3545; margin-bottom: 10px;">Вопросы, на которые вы ответили неправильно (более 3 раз):</h3>
+                <ul id="incorrect-list" style="margin: 0; padding-left: 20px;"></ul>
+            </div>
+            <button class="btn" id="restart-section-btn">Пройти раздел еще раз</button>
+            <button class="btn" id="back-to-menu-btn" onclick="goBackToMenu()" style="background-color: #6c757d; margin-top: 10px;">Вернуться к выбору модулей</button>
+        </div>
+    </div>
+
+<script>
+// --- БАЗА ВОПРОСОВ ПО РАЗДЕЛАМ ---
+
+// Пустые модули для будущих вопросов
+const module1Questions = [
+    { question: "1. Структуру вычислительных систем (ВС) и вопросы взаимодействия ВС и пользователей определяет понятие:", answers: [ { text: "Архитектура", correct: true }, { text: "Безопасность", correct: false }, { text: "Компьютеры", correct: false }, { text: "Управление", correct: false }, { text: "Логистика", correct: false } ] },
+    { question: "2. Через какое устройство-представитель локальные компьютеры будут обращаться к внешним ресурсам, а внешние компьютеры не смогут вообще обращаться к локальным?", answers: [ { text: "proxy", correct: true }, { text: "gross", correct: false }, { text: "point", correct: false }, { text: "firewall", correct: false }, { text: "net", correct: false } ] },
+    { question: "3. Как называется механизм в сетях TCP/IP, позволяющий преобразовывать IP-адреса транзитных пакетов?", answers: [ { text: "NAT", correct: true }, { text: "NET", correct: false }, { text: "NOT", correct: false }, { text: "LAN", correct: false }, { text: "PORT", correct: false } ] },
+    { question: "4. При какой среде передачи информация переносится посредством модулированного светового луча?", answers: [ { text: "оптоволоконной", correct: true }, { text: "сетевой", correct: false }, { text: "кабельной", correct: false }, { text: "инфракрасной", correct: false }, { text: "последовательной", correct: false } ] },
+    { question: "5. Какое соединение характеризует IP-адрес, не отдельный компьютер или маршрутизатор?", answers: [ { text: "Сетевое", correct: true }, { text: "Удаленное", correct: false }, { text: "Прямое", correct: false }, { text: "Коммутируемое", correct: false }, { text: "Проводное", correct: false } ] },
+    { question: "6. Количество проводов в системной шине для передачи информации называется:", answers: [ { text: "разрядностью", correct: true }, { text: "системностью", correct: false }, { text: "устойчивостью", correct: false }, { text: "сигналом", correct: false }, { text: "соединением", correct: false } ] },
+    { question: "7. На каком уровне модели OSI используется адрес DNS?", answers: [ { text: "Прикладном", correct: true }, { text: "Сетевом", correct: false }, { text: "Физическом", correct: false }, { text: "Логическом", correct: false }, { text: "Центральном", correct: false } ] },
+    { question: "8. Когда назначается IP-адрес администратором для компьютеров и маршрутизаторов?", answers: [ { text: "во время конфигурирования", correct: true }, { text: "во время соединения", correct: false }, { text: "во время маршрутизации", correct: false }, { text: "во время синхронизации", correct: false }, { text: "во время останова", correct: false } ] },
+    { question: "9. Где провайдеры услуг Internet получают диапазоны адресов, а затем распределяют их между своими абонентами?", answers: [ { text: "у подразделений NIC", correct: true }, { text: "у администратора NIC", correct: false }, { text: "в сетевом узле", correct: false }, { text: "у удаленных клиентов", correct: false }, { text: "в серверных отделениях", correct: false } ] },
+    { question: "10. Через какое устройство все компоненты компьютера обмениваются информацией и управляющими сигналами?", answers: [ { text: "системную шину", correct: true }, { text: "запоминающую шину", correct: false }, { text: "оперативную шину", correct: false }, { text: "контрольную шину", correct: false }, { text: "постоянную шину", correct: false } ] },
+    { question: "11. Какой процесс необходим на сервере доступа при подключении удалённого пользователя к VPN (либо при установке соединения с другой защищённой сетью)?", answers: [ { text: "идентификации", correct: true }, { text: "обнуления", correct: false }, { text: "защиты", correct: false }, { text: "запроса", correct: false }, { text: "синхронизации", correct: false } ] },
+    { question: "12. В вычислительной сети, какую топологию, помимо физической различают?", answers: [ { text: "логическую", correct: true }, { text: "никакую", correct: false }, { text: "информационную", correct: false }, { text: "сетевую", correct: false }, { text: "сложную", correct: false } ] },
+    { question: "13. Сколько основных конфигураций сети применяют?", answers: [ { text: "3", correct: true }, { text: "2", correct: false }, { text: "1", correct: false }, { text: "4", correct: false }, { text: "0", correct: false } ] },
+    { question: "14. Что необходимо согласовать при работе двух компьютера-отправителя и компьютера – получателя?", answers: [ { text: "тип модуляции сигналов", correct: true }, { text: "размер такта сигнала", correct: false }, { text: "частоту сигнала", correct: false }, { text: "размер сигнала", correct: false }, { text: "количество передающей среды", correct: false } ] },
+    { question: "15. Для чего необходимо двум сетевым компьютерам договариваться о методах контроля достоверности сообщений?", answers: [ { text: "согласованной работы", correct: true }, { text: "синхронизации сообщений", correct: false }, { text: "отправки запросов", correct: false }, { text: "дублирования пакетов", correct: false }, { text: "ожидания ответа", correct: false } ] },
+    { question: "16. Каков размер IP-адреса?", answers: [ { text: "4 байта", correct: true }, { text: "8 байт", correct: false }, { text: "6 байтов", correct: false }, { text: "4 бита", correct: false }, { text: "8 битов", correct: false } ] },
+    { question: "17. Как определяется, какая часть адреса относится к номеру сети, а какая к номеру узла?", answers: [ { text: "По значениям первых битов", correct: true }, { text: "По идентификаторам", correct: false }, { text: "По значениям узлов сети", correct: false }, { text: "По значениям флагов", correct: false }, { text: "По значениям контрольных сумм", correct: false } ] },
+    { question: "18. Какие значения стоят в поле адреса назначения при рассылке широковещательного сообщения (broadcast)?", answers: [ { text: "Одни единицы", correct: true }, { text: "Одни нули", correct: false }, { text: "Смешанные значения", correct: false }, { text: "Контрольные суммы", correct: false }, { text: "Однорядные контакты", correct: false } ] },
+    { question: "19. Один и тот же узел может входить в несколько групп, как при этом называются посылаемые сообщения?", answers: [ { text: "multicast", correct: true }, { text: "broadcast", correct: false }, { text: "loopback", correct: false }, { text: "comeback", correct: false }, { text: "mixcast", correct: false } ] },
+    { question: "20. Какая система обеспечивает инвариантность программных средств к архитектуре системной платы?", answers: [ { text: "BIOS", correct: true }, { text: "BASE", correct: false }, { text: "ROM", correct: false }, { text: "INTEL", correct: false }, { text: "SIMM", correct: false } ] },
+    { question: "20. Как называется барьер, защищающий от попыток злоумышленников вторгнуться во внутреннюю сеть для того, чтобы скопировать, изменить, стереть и т.д. информацию?", answers: [ { text: "межсетевой экран", correct: true }, { text: "соединительный экран", correct: false }, { text: "корпоративный экран", correct: false }, { text: "глобальный экран", correct: false }, { text: "внешний экран", correct: false } ] },
+    { question: "21. От какого уровня получает данные сетевой уровень модели OSI?", answers: [ { text: "транспортного", correct: true }, { text: "удаленного", correct: false }, { text: "зашифрованного", correct: false }, { text: "представления", correct: false }, { text: "канального", correct: false } ] },
+    { question: "22. Как называются системы объединяющие территориально рассредоточенные компьютеры, возможно находящиеся в различных городах и странах?", answers: [ { text: "Глобальные", correct: true }, { text: "Региональные", correct: false }, { text: "Рассредоточенные", correct: false }, { text: "Локальные", correct: false }, { text: "Корпоративные", correct: false } ] },
+    { question: "23. Куда передает физический уровень информацию (биты)?", answers: [ { text: "в канал передачи", correct: true }, { text: "в сетевой узел", correct: false }, { text: "на сервер", correct: false }, { text: "в архив", correct: false }, { text: "в повторный пакет", correct: false } ] },
+    { question: "24. Какое программное обеспечение действует на прикладном уровне, помимо системного?", answers: [ { text: "пользовательское программное обеспечение", correct: true }, { text: "сетевое программное обеспечение", correct: false }, { text: "серверное программное обеспечение", correct: false }, { text: "архивное программное обеспечение", correct: false }, { text: "систематическое программное обеспечение", correct: false } ] },
+    { question: "25. Какой уровень модели OSI для полученных данных ищет для их открытия соответствующий код?", answers: [ { text: "presentation", correct: true }, { text: "network", correct: false }, { text: "application", correct: false }, { text: "neighboring", correct: false }, { text: "repeated", correct: false } ] },
+    { question: "26. Что формирует узел, которому нужно выполнить отображение IP-адреса на локальный адрес?", answers: [ { text: "ARP-запрос", correct: true }, { text: "ARP-задачу", correct: false }, { text: "Ожидание", correct: false }, { text: "Ответ-запрос", correct: false }, { text: "Передачу", correct: false } ] },
+    { question: "27. По режиму работы вычислительные системы делятся помимо однопрограммных, на?", answers: [ { text: "мультипрограммные", correct: true }, { text: "сосредоточенные", correct: false }, { text: "разделенные", correct: false }, { text: "системные", correct: false }, { text: "региональные", correct: false } ] },
+    { question: "28. Как называется режим, при котором в вычислительной системе выполняется одновременно несколько программ?", answers: [ { text: "мультипрограммный", correct: true }, { text: "коллективный", correct: false }, { text: "системный", correct: false }, { text: "монопрограммный", correct: false }, { text: "минипрограммный", correct: false } ] },
+    { question: "29. Как называется режим обработки, при котором система последовательно, либо по расписанию выполняет программы?", answers: [ { text: "пакетный", correct: true }, { text: "доступный", correct: false }, { text: "замедленный", correct: false }, { text: "внешний", correct: false }, { text: "индивидуальный", correct: false } ] },
+    { question: "30. Как называется протокол, решающий задачу - нахождение IP-адреса по известному локальному адресу?", answers: [ { text: "RARP", correct: true }, { text: "PARP", correct: false }, { text: "HTTP", correct: false }, { text: "FTP", correct: false }, { text: "SIMP", correct: false } ] },
+    { question: "31. В каких пределах используется локальный адрес в протоколе IP при обмене данными между маршрутизатором и узлом этой сети?", answers: [ { text: "В пределах локальной сети", correct: true }, { text: "В пределах гибридной сети", correct: false }, { text: "В пределах распределенной сети", correct: false }, { text: "В пределах большой сети", correct: false }, { text: "В пределах Internet", correct: false } ] },
+    { question: "32. Как называется топология, если в качестве центрального узла может выступать сервер?", answers: [ { text: "активная звезда", correct: true }, { text: "пассивная звезда", correct: false }, { text: "ячеистая звезда", correct: false }, { text: "шинная звезда", correct: false }, { text: "кольцевая звезда", correct: false } ] },
+    { question: "33. В каком времени работает ВС, когда информация о процессе автоматически поступает и обрабатывается в ВС?", answers: [ { text: "реальном", correct: true }, { text: "минутном", correct: false }, { text: "общем", correct: false }, { text: "сложном", correct: false }, { text: "виртуальном", correct: false } ] },
+    { question: "34. От чего зависит решение фильтровать ли с помощью межсетевого экрана конкретные адреса и протоколы?", answers: [ { text: "политики безопасности", correct: true }, { text: "сетевой безопасности", correct: false }, { text: "коллективной безопасности", correct: false }, { text: "практической безопасности", correct: false }, { text: "программной безопасности", correct: false } ] },
+    { question: "35. Каким образом передаются цифровые данные по проводнику?", answers: [ { text: "Сменой напряжения", correct: true }, { text: "Сменой числа бит", correct: false }, { text: "Сменой скорости", correct: false }, { text: "Сменой пропускной способности", correct: false }, { text: "Сменой проводников", correct: false } ] },
+    { question: "36. Как называется метод передачи во внутренних шинах данных, а иногда и во внешних устройствах, таких, как принтеры?", answers: [ { text: "Параллельный", correct: true }, { text: "Последовательный", correct: false }, { text: "Смешанный", correct: false }, { text: "Синхронный", correct: false }, { text: "Дуплексный", correct: false } ] },
+    { question: "37. К какой структуре относятся передающие среды (кабели), рабочие станции, платы интерфейса сети, серверы сети?", answers: [ { text: "Физической", correct: true }, { text: "Логической", correct: false }, { text: "Сетевой", correct: false }, { text: "Периферийной", correct: false }, { text: "Центральной", correct: false } ] },
+    { question: "38. Как называется способ соединения компьютеров в сеть?", answers: [ { text: "Топологией", correct: true }, { text: "Связью", correct: false }, { text: "Конвейером", correct: false }, { text: "Соединением", correct: false }, { text: "Драйвером", correct: false } ] },
+    { question: "39. С помощью какого разъема каждый компьютер в шине подключается к коаксиальному кабелю?", answers: [ { text: "Т – коннектор", correct: true }, { text: "Т- передатчик", correct: false }, { text: "Т- узел", correct: false }, { text: "Т- концентратор", correct: false }, { text: "Т- коммутатор", correct: false } ] },
+    { question: "40. Для чего применяются оконечные терминаторы?", answers: [ { text: "для гашения сигналов", correct: true }, { text: "для передачи сигналов", correct: false }, { text: "для модуляции сигналов", correct: false }, { text: "для главной ЭВМ", correct: false }, { text: "для сжатия сигналов", correct: false } ] },
+    { question: "41. Как называется совокупность средств коммутации и передачи данных в одном пункте?", answers: [ { text: "узел связи", correct: true }, { text: "коммутатор", correct: false }, { text: "узел сопряжения", correct: false }, { text: "концентратор", correct: false }, { text: "передатчик данных", correct: false } ] },
+    { question: "42. При топологии «шина» какой режим передачи используется?", answers: [ { text: "Полудуплексный", correct: true }, { text: "Дуплексный", correct: false }, { text: "Полидуплексный", correct: false }, { text: "Симплексный", correct: false }, { text: "Симметричный", correct: false } ] },
+    { question: "43. При какой топологии предполагается прокладка для каждого компьютера в сети отдельного кабеля, соединяющего всех абонентов сети с центром?", answers: [ { text: "Звезда", correct: true }, { text: "Дерево", correct: false }, { text: "Кольцо", correct: false }, { text: "Ячеистая", correct: false }, { text: "Шина", correct: false } ] },
+    { question: "44. Какую технологию передачи данных для компьютерных сетей применяют в Ethernet?", answers: [ { text: "Пакетную передачу", correct: true }, { text: "Коммутационную передачу", correct: false }, { text: "Терминальную передачу", correct: false }, { text: "Управляющую передачу", correct: false }, { text: "Центральную передачу", correct: false } ] },
+    { question: "45. Какой метод доступа к среде передачи данных используется в сетях Ethernet?", answers: [ { text: "CSMA/CD", correct: true }, { text: "CSMA/ СА", correct: false }, { text: "ACCESS", correct: false }, { text: "CDMA/СD", correct: false }, { text: "CDMA/CA", correct: false } ] },
+    { question: "46. Как называется совокупность ЭВМ, объединенных сетью передачи данных?", answers: [ { text: "сетью ЭВМ", correct: true }, { text: "базой ЭВМ", correct: false }, { text: "терминальная сеть", correct: false }, { text: "ориентированные ЭВМ", correct: false }, { text: "межсетевая связь", correct: false } ] },
+    { question: "47. Сколько абонентов при топологии «звезда» находится на каждой линии связи?", answers: [ { text: "2", correct: true }, { text: "4", correct: false }, { text: "8", correct: false }, { text: "1", correct: false }, { text: "0", correct: false } ] },
+    { question: "48. Чем ограничивается время монопольного использования разделяемой среды одним узлом при технологии Ethernet?", answers: [ { text: "передачей одного кадра", correct: true }, { text: "передачей одного пакета", correct: false }, { text: "передачей одних байтов", correct: false }, { text: "передачей сообщений", correct: false }, { text: "передачей сигнала стоп", correct: false } ] },
+    { question: "49. Как в международной терминологии записывается локальная вычислительная сеть?", answers: [ { text: "LAN", correct: true }, { text: "NET", correct: false }, { text: "WARE", correct: false }, { text: "LOCAL", correct: false }, { text: "WAN", correct: false } ] },
+    { question: "50. Как называются устройства сопряжения, которые подключают компьютер к сети?", answers: [ { text: "интерфейсы", correct: true }, { text: "дисплеи", correct: false }, { text: "платы", correct: false }, { text: "разъемы", correct: false }, { text: "моно кабель", correct: false } ] }
+];
+
+const module2Questions = [
+    { question: "51. Какой параметр определяется, как статическое среднее времени, от момента передачи сообщения в сеть, до момента получения сообщения адресатом?", answers: [ { text: "время доставки", correct: true }, { text: "объем сообщений", correct: false }, { text: "скорость доставки", correct: false }, { text: "пропускная способность", correct: false }, { text: "выбор маршрута", correct: false } ] },
+    { question: "52. Какое устройство в сети Ethernet, при попадании кадра в разделяемую среду передачи данных одновременно начинают принимать этот кадр?", answers: [ { text: "сетевые адаптеры", correct: true }, { text: "сетевые повторители", correct: false }, { text: "сетевые роутеры", correct: false }, { text: "сетевые терминалы", correct: false }, { text: "сетевые шлюзы", correct: false } ] },
+    { question: "53. Какой признак говорит о незанятости среды передачи данных?", answers: [ { text: "отсутствие несущей частоты", correct: true }, { text: "отсутствие сигналов", correct: false }, { text: "отсутствие соединения", correct: false }, { text: "отсутствие несущей фазы", correct: false }, { text: "отсутствие несущей амплитуды", correct: false } ] },
+    { question: "54. С помощью какого устройства ЭВМ сопрягается с моноканалом, реализующих функции ввода-вывода данных?", answers: [ { text: "адаптера", correct: true }, { text: "платы", correct: false }, { text: "штепселя", correct: false }, { text: "моноканала", correct: false }, { text: "кабеля", correct: false } ] },
+    { question: "55. Как называется пауза, для того, чтобы сетевые адаптеры пришли в исходное состояние, а также, чтобы не было монопольного захвата среды одной станцией?", answers: [ { text: "межкадровым интервалом", correct: true }, { text: "межкадровой разрядкой", correct: false }, { text: "межкадровым расстоянием", correct: false }, { text: "межкадровым соединением", correct: false }, { text: "межкадровым разделением", correct: false } ] },
+    { question: "56. В какой сети не предусмотрена физическая топология «шина», используется «пассивная звезда», «пассивное дерево»?", answers: [ { text: "Fast Ethernet", correct: true }, { text: "Fast Ring", correct: false }, { text: "Fast Arpanet", correct: false }, { text: "Fast Star", correct: false }, { text: "Fast Tree", correct: false } ] },
+    { question: "57. В сетях с какой структурой, данные передаются в широковещательном режиме и равнодоступны для остальных систем?", answers: [ { text: "шинной", correct: true }, { text: "кольцевой", correct: false }, { text: "звездообразной", correct: false }, { text: "сетевой", correct: false }, { text: "ячеистой", correct: false } ] },
+    { question: "58. При какой конфигурации сети в качестве центрального звена используется ЭВМ или узел связи?", answers: [ { text: "звездообразной", correct: true }, { text: "кольцевой", correct: false }, { text: "магистральной", correct: false }, { text: "произвольной", correct: false }, { text: "системной", correct: false } ] },
+    { question: "59. Какую совокупность средств представляет из себя передающая среда сети?", answers: [ { text: "линии связи", correct: true }, { text: "процессоров", correct: false }, { text: "терминалов", correct: false }, { text: "мониторов", correct: false }, { text: "системы ЭВМ", correct: false } ] },
+    { question: "60. В какой форме производится ввод и вывод данных необходимых процессу?", answers: [ { text: "сообщений", correct: true }, { text: "квитанций", correct: false }, { text: "линий", correct: false }, { text: "кодов", correct: false }, { text: "форматов", correct: false } ] },
+    { question: "61. Как называются логические точки ввода и вывода сообщений из процесса?", answers: [ { text: "портами", correct: true }, { text: "шлюзами", correct: false }, { text: "узлами", correct: false }, { text: "связями", correct: false }, { text: "выводами", correct: false } ] },
+    { question: "62. Как называется последовательность данных, имеющих законченное смысловое значение?", answers: [ { text: "сообщение", correct: true }, { text: "фрагменты", correct: false }, { text: "данные", correct: false }, { text: "слова", correct: false }, { text: "алгоритм", correct: false } ] },
+    { question: "63. Как называется промежуток времени, в течении которого взаимодействуют процессы?", answers: [ { text: "сеанс", correct: true }, { text: "период", correct: false }, { text: "системой передач", correct: false }, { text: "вывод", correct: false }, { text: "сопряжение", correct: false } ] },
+    { question: "64. Какой процесс принято относить к высшему уровню иерархии управления?", answers: [ { text: "прикладной", correct: true }, { text: "физический", correct: false }, { text: "канальный", correct: false }, { text: "системный", correct: false }, { text: "представительский", correct: false } ] },
+    { question: "65. Какой уровень представления обеспечивает передачу данных через базовую СПД?", answers: [ { text: "сетевой", correct: true }, { text: "сеансовый", correct: false }, { text: "прикладной", correct: false }, { text: "физический", correct: false }, { text: "канальный", correct: false } ] },
+    { question: "66. На каком механизме основывается управление потоками?", answers: [ { text: "квитанций", correct: true }, { text: "заголовков", correct: false }, { text: "текстов", correct: false }, { text: "подтверждений", correct: false }, { text: "уведомлений", correct: false } ] },
+    { question: "67. Что происходит с сетью при накапливании пакетов и снижении пропускной способности?", answers: [ { text: "блокировка", correct: true }, { text: "отключение", correct: false }, { text: "сигнализация", correct: false }, { text: "сохранение", correct: false }, { text: "уничтожение", correct: false } ] },
+    { question: "68. Пакеты данных поступают в СПД, имея в своем заголовке?", answers: [ { text: "адрес порта", correct: true }, { text: "имя порта", correct: false }, { text: "адрес линии", correct: false }, { text: "маршрут передачи", correct: false }, { text: "топологию сети", correct: false } ] },
+    { question: "69. Как называется уровень управления, который обеспечивает передачу данных через физический канал?", answers: [ { text: "Канальный", correct: true }, { text: "Физический", correct: false }, { text: "Транспортный", correct: false }, { text: "Прикладной", correct: false }, { text: "Передающий", correct: false } ] },
+    { question: "70. Какой уровень реализует процедуру сопряжения абонентов сети в базовую сеть передачи данных?", answers: [ { text: "транспортный", correct: true }, { text: "физический", correct: false }, { text: "прикладной", correct: false }, { text: "сеансовый", correct: false }, { text: "сетевой", correct: false } ] },
+    { question: "71. Какой уровень осуществляет трансляцию различных языков, форматов данных и кодов для взаимодействия различных ЭВМ?", answers: [ { text: "представления", correct: true }, { text: "физический", correct: false }, { text: "канальный", correct: false }, { text: "транспортный", correct: false }, { text: "сетевой", correct: false } ] },
+    { question: "72. На каком уровне по запросам процессов создаются порты для приема и передачи данных?", answers: [ { text: "сеансовом", correct: true }, { text: "канальном", correct: false }, { text: "сетевом", correct: false }, { text: "физическом", correct: false }, { text: "информационном", correct: false } ] },
+    { question: "73. Как называется соглашение, по которому производится взаимодействие между уровнями одной системы?", answers: [ { text: "интерфейс", correct: true }, { text: "шина", correct: false }, { text: "топология", correct: false }, { text: "адаптер", correct: false }, { text: "моно канал", correct: false } ] },
+    { question: "74. На каком уровне организации ВС происходит подключение и отключение канала связи и формирование сигнала, представляющих передаваемые данные?", answers: [ { text: "физическом", correct: true }, { text: "сетевом", correct: false }, { text: "сеансовом", correct: false }, { text: "транспортном", correct: false }, { text: "прикладном", correct: false } ] },
+    { question: "75. Сколько уровней включает архитектура открытых систем, принятое в качестве стандарта при разработке вычислительных сетей?", answers: [ { text: "7", correct: true }, { text: "2", correct: false }, { text: "4", correct: false }, { text: "5", correct: false }, { text: "3", correct: false } ] },
+    { question: "76. Какая передача применяется внутри компьютера, например, во внутренних шинах данных?", answers: [ { text: "параллельная", correct: true }, { text: "последовательная", correct: false }, { text: "оптическая", correct: false }, { text: "симплексная", correct: false }, { text: "процедурная", correct: false } ] },
+    { question: "77. К какому процессу другой системы формирует сообщение прикладной процесс системы А?", answers: [ { text: "прикладному", correct: true }, { text: "физическому", correct: false }, { text: "канальному", correct: false }, { text: "сеансовому", correct: false }, { text: "транспортному", correct: false } ] },
+    { question: "78. Как называется процедура взаимодействия процессов на основе обмена сообщениями?", answers: [ { text: "протоколами", correct: true }, { text: "вводом", correct: false }, { text: "транспортировкой", correct: false }, { text: "управлением", correct: false }, { text: "адресацией", correct: false } ] },
+    { question: "79. Какая характеристика задается перечислением типов сообщений и их смысла?", answers: [ { text: "логическая", correct: true }, { text: "процедурная", correct: false }, { text: "информационная", correct: false }, { text: "физическая", correct: false }, { text: "семантическая", correct: false } ] },
+    { question: "80. Как называется правило выполнения действий, предписанных протоколами взаимодействия?", answers: [ { text: "процедурной характеристикой", correct: true }, { text: "логической характеристикой", correct: false }, { text: "физической характеристикой", correct: false }, { text: "прикладной характеристикой", correct: false }, { text: "переходной характеристикой", correct: false } ] },
+    { question: "81. Как называются переходные системы для объединения вычислительных сетей?", answers: [ { text: "шлюзы", correct: true }, { text: "окна", correct: false }, { text: "порты", correct: false }, { text: "сеансы", correct: false }, { text: "структуры", correct: false } ] },
+    { question: "82. Как в международной терминологии называется модель архитектуры открытых систем?", answers: [ { text: "OSI", correct: true }, { text: "IBM", correct: false }, { text: "OIS", correct: false }, { text: "ISO", correct: false }, { text: "MOSI", correct: false } ] },
+    { question: "83. Какой уровень управления осуществляет трансляцию языков, кодов?", answers: [ { text: "6", correct: true }, { text: "3", correct: false }, { text: "2", correct: false }, { text: "4", correct: false }, { text: "5", correct: false } ] },
+    { question: "84. Какой вид информационной связи обеспечивает выделение физического канала для прямой передачи данных между абонентами?", answers: [ { text: "коммутация каналов", correct: true }, { text: "прямой доступ", correct: false }, { text: "передача сообщений", correct: false }, { text: "узловая связь", correct: false }, { text: "пакетная связь", correct: false } ] },
+    { question: "85. Какое устройство устанавливается в сопрягаемых вычислительных сетях для преобразования сообщений одной структуры в сообщения другой структуры?", answers: [ { text: "транслятор", correct: true }, { text: "компилятор", correct: false }, { text: "модем", correct: false }, { text: "факс", correct: false }, { text: "терминал", correct: false } ] },
+    { question: "86. При каком виде связи данные передаются в виде сообщений, содержащего заголовок, по маршруту, определяемому узлами сети?", answers: [ { text: "коммутации сообщений", correct: true }, { text: "коммутации каналов", correct: false }, { text: "коммутации абонентов", correct: false }, { text: "соединении узлов", correct: false }, { text: "параллельной коммутации", correct: false } ] },
+    { question: "87. Каким техническим средством реализуются функции управления физическим каналом?", answers: [ { text: "адаптером", correct: true }, { text: "транслятором", correct: false }, { text: "модемом", correct: false }, { text: "терминалом", correct: false }, { text: "моноканалом", correct: false } ] },
+    { question: "88. Каким образом выполняются функции управления сетью?", answers: [ { text: "программно", correct: true }, { text: "аппаратно", correct: false }, { text: "технически", correct: false }, { text: "программно аппаратно", correct: false }, { text: "процессорно", correct: false } ] },
+    { question: "89. При каком виде информационной связи сообщения разбиваются на пакеты, имеющие фиксированную максимальную длину?", answers: [ { text: "коммутация пакетов", correct: true }, { text: "коммутация сообщений", correct: false }, { text: "пакетная связь", correct: false }, { text: "прямая связь", correct: false }, { text: "коммутация каналов", correct: false } ] },
+    { question: "90. При каком способе передачи, пакеты передаются как независимые объекты?", answers: [ { text: "дейтаграммном", correct: true }, { text: "удаленном", correct: false }, { text: "маршрутном", correct: false }, { text: "виртуальном", correct: false }, { text: "визуальном", correct: false } ] },
+    { question: "91. Как в международной терминологии обозначается глобальная сеть?", answers: [ { text: "WAN", correct: true }, { text: "LAN", correct: false }, { text: "WLA", correct: false }, { text: "NET", correct: false }, { text: "LINE", correct: false } ] },
+    { question: "92. На сколько подгрупп делятся протоколы ТCP/IP?", answers: [ { text: "5", correct: true }, { text: "3", correct: false }, { text: "2", correct: false }, { text: "0", correct: false }, { text: "1", correct: false } ] },
+    { question: "93. К какому виду протоколов относятся протоколы, которые управляют перемещением данных от одного компьютера к другому?", answers: [ { text: "транспортным", correct: true }, { text: "внутренним", correct: false }, { text: "интерфейсным", correct: false }, { text: "маршрутным", correct: false }, { text: "шлюзовым", correct: false } ] },
+    { question: "94. Каким образом обозначается маршрутный протокол?", answers: [ { text: "IP", correct: true }, { text: "PI", correct: false }, { text: "PIR", correct: false }, { text: "UDP", correct: false }, { text: "SP", correct: false } ] },
+    { question: "95. Какой вид протокола из ТCP/IP обрабатывает адресную информацию и определяет лучший маршрут?", answers: [ { text: "маршрутный", correct: true }, { text: "узловой", correct: false }, { text: "структурный", correct: false }, { text: "шлюзовой", correct: false }, { text: "транспортный", correct: false } ] },
+    { question: "96. Какой вид протокола обрабатывает адресацию компьютеров в сети по номерам?", answers: [ { text: "сетевой адресации", correct: true }, { text: "внешней адресации", correct: false }, { text: "транспортный", correct: false }, { text: "маршрутный", correct: false }, { text: "структурный", correct: false } ] },
+    { question: "97. Каким образом обозначаются протоколы сетевой адресации?", answers: [ { text: "ARP", correct: true }, { text: "IP", correct: false }, { text: "BBS", correct: false }, { text: "FTP", correct: false }, { text: "FS", correct: false } ] },
+    { question: "98. Как называется протокол, обеспечивающий маршрутизацию между различными сетями?", answers: [ { text: "шлюзовый", correct: true }, { text: "маршрутный", correct: false }, { text: "сетевой", correct: false }, { text: "адресный", correct: false }, { text: "транспортный", correct: false } ] },
+    { question: "99. Как обозначается протокол, передающий информацию о состоянии сети?", answers: [ { text: "NFS", correct: true }, { text: "IP", correct: false }, { text: "UDP", correct: false }, { text: "PT", correct: false }, { text: "PC", correct: false } ] },
+    { question: "100. Каким образом обозначается шлюзовой протокол?", answers: [ { text: "EGP", correct: true }, { text: "TCP", correct: false }, { text: "UDP", correct: false }, { text: "NNP", correct: false }, { text: "FTP", correct: false } ] }
+];
+const module3Questions = [
+    { question: "101. К какой структуре сети относятся рабочие станции, платы интерфейса сети (сетевые адаптеры), серверы сети, то есть все технические устройства?", answers: [ { text: "физической", correct: true }, { text: "программной", correct: false }, { text: "параллельной", correct: false }, { text: "адресной", correct: false }, { text: "логической", correct: false } ] },
+    { question: "102. Какое устройство снабжено уникальным адресом, определяющим компьютер, известный файловому серверу и другим компьютерам сети?", answers: [ { text: "сетевая плата", correct: true }, { text: "видеоадаптер", correct: false }, { text: "адресное пространство", correct: false }, { text: "регистр", correct: false }, { text: "слот", correct: false } ] },
+    { question: "103. Какой способ передачи позволяет передавать данные без предварительной процедуры установления соединения?", answers: [ { text: "дейтаграммный", correct: true }, { text: "физический", correct: false }, { text: "прямой", correct: false }, { text: "удаленный", correct: false }, { text: "адресный", correct: false } ] },
+    { question: "104. Какой уровень в модели OSI (стандарте) вычислительных сетей является нижним уровнем управления?", answers: [ { text: "физический", correct: true }, { text: "прикладной", correct: false }, { text: "сеансовый", correct: false }, { text: "канальный", correct: false }, { text: "сетевой", correct: false } ] },
+    { question: "105. Обмен какими структурами является в вычислительных сетях единственной формой взаимодействия процессов?", answers: [ { text: "сообщениями", correct: true }, { text: "массивами", correct: false }, { text: "базами", correct: false }, { text: "заголовками", correct: false }, { text: "памятью", correct: false } ] },
+    { question: "106. На каком уровне модели OSI возможно стандартное сопряжение различных систем с СПД?", answers: [ { text: "транспортном", correct: true }, { text: "физическом", correct: false }, { text: "сеансовом", correct: false }, { text: "канальном", correct: false }, { text: "сетевом", correct: false } ] },
+    { question: "107. На каком уровне модели OSI при семиуровневой системе организуются сеансы связи на период взаимодействия процессов?", answers: [ { text: "5", correct: true }, { text: "2", correct: false }, { text: "3", correct: false }, { text: "4", correct: false }, { text: "6", correct: false } ] },
+    { question: "108. На основе какого канала организуются средства управления сеансами?", answers: [ { text: "транспортного", correct: true }, { text: "физического", correct: false }, { text: "передающего", correct: false }, { text: "канального", correct: false }, { text: "сетевого", correct: false } ] },
+    { question: "109. Какой уровень в модели OSI реализует управление каналом связи, т.е. подключение и отключение связи?", answers: [ { text: "1", correct: true }, { text: "3", correct: false }, { text: "2", correct: false }, { text: "4", correct: false }, { text: "5", correct: false } ] },
+    { question: "110. Чему равна максимальная длина сегмента сети при обозначении в стандарте Ethernet 100Base –T?", answers: [ { text: "100 м", correct: true }, { text: "10 м", correct: false }, { text: "200 м", correct: false }, { text: "1000 м", correct: false }, { text: "0.5 м", correct: false } ] },
+    { question: "111. При какой вычислительной сети совокупность близко расположенных ЭВМ связаны последовательными интерфейсами?", answers: [ { text: "локальной", correct: true }, { text: "глобальной", correct: false }, { text: "распределенной", correct: false }, { text: "смешанной", correct: false }, { text: "связной", correct: false } ] },
+    { question: "112. На каком уровне определяются отличия Fast Ethernet от Ethernet?", answers: [ { text: "физическом", correct: true }, { text: "прикладном", correct: false }, { text: "нижнем", correct: false }, { text: "соединительном", correct: false }, { text: "маршрутном", correct: false } ] },
+    { question: "113. В ЛВС какой топологии данные, передаваемые любой системой, равнодоступны для остальных систем сети?", answers: [ { text: "шинной", correct: true }, { text: "звездной", correct: false }, { text: "комбинированной", correct: false }, { text: "кольцевой", correct: false }, { text: "прямой", correct: false } ] },
+    { question: "114. В ЛВС отсутствует необходимость какого уровня управления?", answers: [ { text: "сетевого", correct: true }, { text: "канального", correct: false }, { text: "физического", correct: false }, { text: "прикладного", correct: false }, { text: "нулевого", correct: false } ] },
+    { question: "115. При какой конфигурации ЛВС данные передаются в одном направлении?", answers: [ { text: "кольцевой", correct: true }, { text: "шинной", correct: false }, { text: "звездной", correct: false }, { text: "произвольной", correct: false }, { text: "комбинированной", correct: false } ] },
+    { question: "116. Какой алгоритм кодирования используется в Fast Ethernet?", answers: [ { text: "4B/5B", correct: true }, { text: "2В/5В", correct: false }, { text: "4F/ 6В", correct: false }, { text: "3Т/5В", correct: false }, { text: "4В/8В", correct: false } ] },
+    { question: "117. При какой топологии в качестве центрального узла используется ЭВМ или узел связи, осуществляющий коммутацию данных между системами сети?", answers: [ { text: "звездообразной", correct: true }, { text: "гибридной", correct: false }, { text: "кольцевой", correct: false }, { text: "шинной", correct: false }, { text: "ячеистообразной", correct: false } ] },
+    { question: "118. Какая структура ЛВС допускает передачу данных в широковещательном режиме?", answers: [ { text: "шинная", correct: true }, { text: "кольцевая", correct: false }, { text: "произвольная", correct: false }, { text: "звездообразная", correct: false }, { text: "гибридная", correct: false } ] },
+    { question: "119. Как формулируется промежуток времени, в течение которого происходит обмен сообщениями?", answers: [ { text: "сессия", correct: true }, { text: "тайм", correct: false }, { text: "тайм-аут", correct: false }, { text: "блиц", correct: false }, { text: "период", correct: false } ] },
+    { question: "120. Какую среду передачи используют при обозначении семейства Ethernet 10Base -F?", answers: [ { text: "оптоволокно", correct: true }, { text: "терминальную", correct: false }, { text: "клавиатуру", correct: false }, { text: "коаксиал", correct: false }, { text: "витую пару", correct: false } ] },
+    { question: "121. Посредством каких интерфейсных устройств уровни управления 1 и 2 связываются между собой?", answers: [ { text: "шину", correct: true }, { text: "кабели", correct: false }, { text: "структуру", correct: false }, { text: "схему", correct: false }, { text: "плату", correct: false } ] },
+    { question: "122. Чем определяется порядок взаимодействия между уровнями управления, которые реализуются программными средствами?", answers: [ { text: "интерфейсами", correct: true }, { text: "трансфейсами", correct: false }, { text: "протоколами", correct: false }, { text: "шинами", correct: false }, { text: "прямым управлением", correct: false } ] },
+    { question: "123. При каком методе передачи в коммуникационных системах данные передаются только в одном направлении?", answers: [ { text: "симплексном", correct: true }, { text: "полудуплексном", correct: false }, { text: "дискретном", correct: false }, { text: "цифровом", correct: false }, { text: "параллельном", correct: false } ] },
+    { question: "124. Сколько элементов содержится во всех коммуникационных системах?", answers: [ { text: "4", correct: true }, { text: "2", correct: false }, { text: "3", correct: false }, { text: "1", correct: false }, { text: "0", correct: false } ] },
+    { question: "125. Сколько основных видов кабелей используется при построении сетей для коммуникационных соединений?", answers: [ { text: "3", correct: true }, { text: "1", correct: false }, { text: "2", correct: false }, { text: "4", correct: false }, { text: "5", correct: false } ] },
+    { question: "126. Как называется режим передачи, при котором данные передаются в обоих направлениях не одновременно, а последовательно?", answers: [ { text: "полудуплексный", correct: true }, { text: "симплексный", correct: false }, { text: "аналоговый", correct: false }, { text: "параллельный", correct: false }, { text: "полнодуплексный", correct: false } ] },
+    { question: "127. При каком режиме передачи данные передаются в обоих направлениях одновременно?", answers: [ { text: "дуплексном", correct: true }, { text: "цифровом", correct: false }, { text: "симплексном", correct: false }, { text: "последовательном", correct: false }, { text: "параллельном", correct: false } ] },
+    { question: "128. Какая передача характеризуется тем, что группа битов передается одновременно по нескольким проводникам?", answers: [ { text: "параллельная", correct: true }, { text: "симплексная", correct: false }, { text: "полудуплексная", correct: false }, { text: "аналоговая", correct: false }, { text: "режимная", correct: false } ] },
+    { question: "129. Как называется передача, при которой группа битов передается последовательно один за другим по одному проводнику?", answers: [ { text: "последовательная", correct: true }, { text: "параллельная", correct: false }, { text: "цифровая", correct: false }, { text: "симплексная", correct: false }, { text: "дуплексная", correct: false } ] },
+    { question: "130. При какой передаче каждый байт описывается старт-стоповым числом – битом, с помощью которых приемник их разделяет?", answers: [ { text: "асинхронной", correct: true }, { text: "последовательной", correct: false }, { text: "дуплексной", correct: false }, { text: "параллельной", correct: false }, { text: "синхронной", correct: false } ] },
+    { question: "131. Как называется устройство, преобразующее при передаче данных цифровые сигналы компьютера в аналоговую форму?", answers: [ { text: "модем", correct: true }, { text: "проводник", correct: false }, { text: "соединение", correct: false }, { text: "адепт", correct: false }, { text: "преобразователь", correct: false } ] },
+    { question: "132. Сколько конфигураций имеет провод в виде витой пары?", answers: [ { text: "2", correct: true }, { text: "3", correct: false }, { text: "1", correct: false }, { text: "0", correct: false }, { text: "4", correct: false } ] },
+    { question: "133. Как обозначается экранированный провод, содержащий металлическую оплетку вокруг отдельных скрученных друг с другом проводов?", answers: [ { text: "STP", correct: true }, { text: "OAO", correct: false }, { text: "SOS", correct: false }, { text: "TP", correct: false }, { text: "CAT", correct: false } ] },
+    { question: "134. Какой кабель состоит из центрального проводника в изоляторе, который в свою очередь завернут в наружный проводник, поверх которого расположен еще один слой изоляции?", answers: [ { text: "коаксиальный", correct: true }, { text: "виниловый", correct: false }, { text: "оптический", correct: false }, { text: "экранированный", correct: false }, { text: "изолированный", correct: false } ] },
+    { question: "135. Какие сигналы проводят волоконно-оптические кабели?", answers: [ { text: "световые", correct: true }, { text: "гидравлические", correct: false }, { text: "пневматические", correct: false }, { text: "звуковые", correct: false }, { text: "не знаю", correct: false } ] },
+    { question: "136. Как называется устройство, которое обеспечивает сопряжение ЭВМ с несколькими каналами связи?", answers: [ { text: "мультиплексор", correct: true }, { text: "клавиатурой", correct: false }, { text: "принтер", correct: false }, { text: "транслятором", correct: false }, { text: "дуплексором", correct: false } ] },
+    { question: "137. Какой тип топологии определяет правила физических соединений узлов (прокладку реальных кабелей).", answers: [ { text: "физический", correct: true }, { text: "линейный", correct: false }, { text: "циклическом", correct: false }, { text: "хорошем", correct: false }, { text: "адресном", correct: false } ] },
+    { question: "138. При какой схеме построение имен состоит в присвоении постоянных имен лишь отдельным процессам?", answers: [ { text: "распределение адресов", correct: true }, { text: "распределение алфавитов", correct: false }, { text: "распределение циклов", correct: false }, { text: "иерархическом кодировании", correct: false }, { text: "шифровании символов", correct: false } ] },
+    { question: "139. Как называется процедура присвоения каждому байту общесетевого адреса?", answers: [ { text: "отображение адреса", correct: true }, { text: "кодирование адреса", correct: false }, { text: "распределение имени", correct: false }, { text: "иерархическое кодирование", correct: false }, { text: "поиск идентификатора", correct: false } ] },
+    { question: "140. По какой топологии построена локальная сеть Token Ring?", answers: [ { text: "кольцо", correct: true }, { text: "шина", correct: false }, { text: "звезда", correct: false }, { text: "гибридная", correct: false }, { text: "кольцо-шина", correct: false } ] },
+    { question: "141. При какой топологии сети каждый узел соединен с центром – соединительным модулем или концентратором?", answers: [ { text: "звезда", correct: true }, { text: "шина", correct: false }, { text: "кольцо", correct: false }, { text: "гибридная", correct: false }, { text: "магистральная", correct: false } ] },
+    { question: "142. Как называется процедура, устанавливающая порядок именования отправителей и получателей?", answers: [ { text: "адресация", correct: true }, { text: "вычисление", correct: false }, { text: "кодирование", correct: false }, { text: "систематизация", correct: false }, { text: "шифрование", correct: false } ] },
+    { question: "143. Какими бывают имена, которые используются в отдельной системе сети?", answers: [ { text: "локальными", correct: true }, { text: "общими", correct: false }, { text: "распределенными", correct: false }, { text: "единичными", correct: false }, { text: "сетевыми", correct: false } ] },
+    { question: "144. Какой вид топологии определяет направление потоков данных между узлами сети, то есть правила, которые закладываются в программное обеспечение?", answers: [ { text: "логическая", correct: true }, { text: "виртуальная", correct: false }, { text: "магистральная", correct: false }, { text: "сетевая", correct: false }, { text: "общая", correct: false } ] },
+    { question: "145. Какая локальная сеть является самой быстродействующей?", answers: [ { text: "FDDI", correct: true }, { text: "TOK RING", correct: false }, { text: "CBGE", correct: false }, { text: "ETHE", correct: false }, { text: "ARCNET", correct: false } ] },
+    { question: "146. По какой топологии построена локальная сеть FDDI?", answers: [ { text: "магистральной", correct: true }, { text: "кольцевой", correct: false }, { text: "звезда", correct: false }, { text: "гибридной", correct: false }, { text: "кольцо-звезда", correct: false } ] },
+    { question: "147. Сколько знаков содержится в структуре международных адресов терминалов?", answers: [ { text: "14", correct: true }, { text: "10", correct: false }, { text: "5", correct: false }, { text: "7", correct: false }, { text: "12", correct: false } ] },
+    { question: "148. Сколько раз выполняется маршрутизация при передаче данных по виртуальному каналу?", answers: [ { text: "1", correct: true }, { text: "2", correct: false }, { text: "5", correct: false }, { text: "0", correct: false }, { text: "3", correct: false } ] },
+    { question: "149. Как называется правило назначения выходной линии связи по заголовку пакета?", answers: [ { text: "алгоритм маршрутизации", correct: true }, { text: "заголовок - концевик", correct: false }, { text: "обрамление сообщения", correct: false }, { text: "адрес порта", correct: false }, { text: "алгоритм расстояния", correct: false } ] },
+    { question: "150. На каком механизме основано управление потоком в сети?", answers: [ { text: "квитанций", correct: true }, { text: "сообщений", correct: false }, { text: "маркеров", correct: false }, { text: "переноса", correct: false }, { text: "тактовой задержки", correct: false } ] }
+];
+const module4Questions = [
+    { question: "151. Как называется процесс передачи, если последовательность передаваемых битов соблюдается?", answers: [ { text: "корректным", correct: true }, { text: "ошибочным", correct: false }, { text: "ускоренным", correct: false }, { text: "некорректным", correct: false }, { text: "подтвержденным", correct: false } ] },
+    { question: "152. Как называется утилита для просмотра текущих планов драйвов?", answers: [ { text: "МАР", correct: true }, { text: "INPUT", correct: false }, { text: "ROOT", correct: false }, { text: "RAY", correct: false }, { text: "MIDLE", correct: false } ] },
+    { question: "153. Каким образом обозначается утилита для регистрации в конкретном файл – сервере и получение доступа к ресурсам этого сервера?", answers: [ { text: "LOGIN", correct: true }, { text: "GOON", correct: false }, { text: "GODWN", correct: false }, { text: "PUT", correct: false }, { text: "EXIT", correct: false } ] },
+    { question: "154. При какой топологии информация от каждого компьютера одновременно передается ко всем остальным компьютерам, а никакого центрального абонента не существует?", answers: [ { text: "пассивная звезда", correct: true }, { text: "активная звезда", correct: false }, { text: "шина", correct: false }, { text: "кольцо", correct: false }, { text: "дерево", correct: false } ] },
+    { question: "155. Компьютер подключенный к Internet и использующий для связи с другими компьютерами сети протокол ТСP/IP называется?", answers: [ { text: "хостом", correct: true }, { text: "доменом", correct: false }, { text: "провайдером", correct: false }, { text: "трафиком", correct: false }, { text: "портом", correct: false } ] },
+    { question: "156. Как называется устройство или программа, сконфигурированные таким образом, чтобы фильтровать входящие и исходящие пакеты?", answers: [ { text: "фильтрующий маршрутизатор", correct: true }, { text: "узловой маршрутизатор", correct: false }, { text: "основной маршрутизатор", correct: false }, { text: "ключевой маршрутизатор", correct: false }, { text: "системный маршрутизатор", correct: false } ] },
+    { question: "157. При какой топологии для соединения центрального и одного периферийного компьютера используется две линии связи?", answers: [ { text: "звезда", correct: true }, { text: "дерево", correct: false }, { text: "ячеистая", correct: false }, { text: "шина", correct: false }, { text: "кольцо", correct: false } ] },
+    { question: "157. Какая система содержит одинарный поток команд и одинарный поток данных?", answers: [ { text: "однопроцессорная", correct: true }, { text: "многопроцессорная", correct: false }, { text: "командная", correct: false }, { text: "поточная", correct: false }, { text: "конвейерная", correct: false } ] },
+    { question: "158. В какой вычислительной системе информация на выходе одного процессора является входной информацией для следующего?", answers: [ { text: "конвейерной", correct: true }, { text: "сложной", correct: false }, { text: "внешней", correct: false }, { text: "командной", correct: false }, { text: "нет ответа", correct: false } ] },
+    { question: "159. Как называется устройство, которое осуществляет сегментирование локальной сети и выделяет полосу пропускания конечным станциям?", answers: [ { text: "коммутатор", correct: true }, { text: "адаптер", correct: false }, { text: "маршрутизатор", correct: false }, { text: "ретранслятор", correct: false }, { text: "фильтратор", correct: false } ] },
+    { question: "160. Как называется модуль, выполняющий функцию информационно-вычислительные?", answers: [ { text: "хост-модуль", correct: true }, { text: "опто- модуль", correct: false }, { text: "шина", correct: false }, { text: "провод", correct: false }, { text: "мышь- модуль", correct: false } ] },
+    { question: "161. Какой модуль выполняет сопряжение разнотипных сетей, хост-модулей, терминальных модулей?", answers: [ { text: "интерфейсный", correct: true }, { text: "хост-модуль", correct: false }, { text: "терминал", correct: false }, { text: "центральный", correct: false }, { text: "физический", correct: false } ] },
+    { question: "162. Как называется точка, расположенная между процессами и программой управления передачей?", answers: [ { text: "порт", correct: true }, { text: "ввод", correct: false }, { text: "мышь", correct: false }, { text: "флоппи", correct: false }, { text: "точка", correct: false } ] },
+    { question: "163. Что позволяет выявить символы расположенные в концевике сообщения?", answers: [ { text: "ошибки", correct: true }, { text: "имена", correct: false }, { text: "адреса", correct: false }, { text: "ключи", correct: false }, { text: "нет ответа", correct: false } ] },
+    { question: "164. Какая информация записывается в заголовок сообщения?", answers: [ { text: "адрес", correct: true }, { text: "ошибки", correct: false }, { text: "нули", correct: false }, { text: "биты", correct: false }, { text: "имя", correct: false } ] },
+    { question: "165. Какая программа управления, кроме представления, добавляет к массиву информации заголовок и концевик?", answers: [ { text: "сеансом", correct: true }, { text: "физическая", correct: false }, { text: "удаленная", correct: false }, { text: "внешняя", correct: false }, { text: "нет ответа", correct: false } ] },
+    { question: "166. Какими бывают каналы, соединяющие в вычислительных сетях программы управления сетью?", answers: [ { text: "транспортными", correct: true }, { text: "новыми", correct: false }, { text: "физическими", correct: false }, { text: "адресными", correct: false }, { text: "никакими", correct: false } ] },
+    { question: "167. При передачи информации от адреса А, что получается после образования блока и фрагмента информации?", answers: [ { text: "пакет", correct: true }, { text: "слово", correct: false }, { text: "сеанс", correct: false }, { text: "порт", correct: false }, { text: "нет ответа", correct: false } ] },
+    { question: "168. Какой модуль ВС осуществляет административное управление?", answers: [ { text: "модуль управления", correct: true }, { text: "хост-модуль", correct: false }, { text: "интерфейсный модуль", correct: false }, { text: "модуль расчета", correct: false }, { text: "модуль прикладной", correct: false } ] },
+    { question: "169. При каком доступе рабочей станции предоставляется право на использование кольца в определенном порядке?", answers: [ { text: "маркерном", correct: true }, { text: "модульном", correct: false }, { text: "определенном", correct: false }, { text: "машинном", correct: false }, { text: "сеансовом", correct: false } ] },
+    { question: "170. Что убирает программа управления передачи в полученном фрагменте?", answers: [ { text: "заголовок", correct: true }, { text: "адрес", correct: false }, { text: "программу", correct: false }, { text: "имя", correct: false }, { text: "информацию", correct: false } ] },
+    { question: "171. Что является основной задачей программы управления сетью?", answers: [ { text: "маршрутизация пакетов", correct: true }, { text: "поиск адресации", correct: false }, { text: "поиск выхода", correct: false }, { text: "идентификация пакетов", correct: false }, { text: "передача процесса", correct: false } ] },
+    { question: "172. При какой топологии общая производительность сети определяется производительностью самого медленного компьютера?", answers: [ { text: "кольцо", correct: true }, { text: "шина", correct: false }, { text: "магистраль", correct: false }, { text: "звезда", correct: false }, { text: "адрес", correct: false } ] },
+    { question: "173. При маршрутизации пакетов, какая информация содержится в заголовке пакета?", answers: [ { text: "управляющая", correct: true }, { text: "цепная", correct: false }, { text: "главная", correct: false }, { text: "вводная", correct: false }, { text: "выводящая", correct: false } ] },
+    { question: "174. Структура вычислительных систем и вопросы взаимодействия ВС и пользователей определяет понятие?", answers: [ { text: "Архитектура", correct: true }, { text: "Макулатура", correct: false }, { text: "Маршрутизаторы", correct: false }, { text: "Управление", correct: false }, { text: "Логика", correct: false } ] },
+    { question: "175. Какой алгоритм доступа требуется в технологии Token Ring?", answers: [ { text: "Детерминированный", correct: true }, { text: "Случайный", correct: false }, { text: "Стохастический", correct: false }, { text: "Определенный", correct: false }, { text: "Управляемый", correct: false } ] },
+    { question: "176. Как называется признак, когда программа, разработанная для одного компьютера в машинном коде, выполняется на другом с получением одинаковых результатов?", answers: [ { text: "тождественность", correct: true }, { text: "родственность", correct: false }, { text: "аналогичность", correct: false }, { text: "традуктивность", correct: false }, { text: "структурность", correct: false } ] },
+    { question: "177. В какой группе устройств относят центральный процессор и внутреннюю память?", answers: [ { text: "центральной", correct: true }, { text: "внешней", correct: false }, { text: "машинной", correct: false }, { text: "виртуальной", correct: false }, { text: "операционной", correct: false } ] },
+    { question: "178. Каким числом идентифицируется порт, которое используется клиентом или сервером для посылки или приема сообщений?", answers: [ { text: "16 битовым", correct: true }, { text: "32 битовым", correct: false }, { text: "64 битовым", correct: false }, { text: "8 битовым", correct: false }, { text: "28 битовым", correct: false } ] },
+    { question: "179. Какое устройство дает команду вывода результатов из памяти?", answers: [ { text: "процессор", correct: true }, { text: "накопитель", correct: false }, { text: "монитор", correct: false }, { text: "счетчик", correct: false }, { text: "платформа", correct: false } ] },
+    { question: "180. Как называется память из совокупности оперативной памяти и внешних запоминающих устройств?", answers: [ { text: "виртуальной", correct: true }, { text: "вспомогательной", correct: false }, { text: "динамической", correct: false }, { text: "внешней", correct: false }, { text: "оперативной", correct: false } ] },
+    { question: "181. Как называется массив информации при добавлении к пакету заголовка и концевика?", answers: [ { text: "кадр", correct: true }, { text: "массив", correct: false }, { text: "блок", correct: false }, { text: "символ", correct: false }, { text: "структура", correct: false } ] },
+    { question: "182. Как называется управляющие символы для отделения одного кадра от другого?", answers: [ { text: "флаги", correct: true }, { text: "биты", correct: false }, { text: "байты", correct: false }, { text: "коды", correct: false }, { text: "нули", correct: false } ] },
+    { question: "183. Какую задачу выполняет сеансовый уровень управления программной структуры?", answers: [ { text: "обеспечение связи", correct: true }, { text: "вычисление связи", correct: false }, { text: "поиск сеанса", correct: false }, { text: "диагностика", correct: false }, { text: "сбор данных", correct: false } ] },
+    { question: "184. Как называется программа, преобразующая стандарты и характеристики?", answers: [ { text: "транслятор", correct: true }, { text: "процессор", correct: false }, { text: "терминал", correct: false }, { text: "памя", correct: false }, { text: "массив", correct: false } ] },
+    { question: "185. Как называется топология, которую можно рассматривать как комбинацию нескольких звезд?", answers: [ { text: "дерево", correct: true }, { text: "порт", correct: false }, { text: "шина", correct: false }, { text: "пакет", correct: false }, { text: "кольцо", correct: false } ] },
+    { question: "186. При какой топологии к концентратору подключаются как отдельные компьютеры, так и целые шинные сегменты?", answers: [ { text: "star-bus", correct: true }, { text: "star- ring", correct: false }, { text: "ring", correct: false }, { text: "soft", correct: false }, { text: "bus-ring", correct: false } ] },
+    { question: "187. Как называется операция передачи информации из центральных устройств в периферийные?", answers: [ { text: "вывод", correct: true }, { text: "адресация", correct: false }, { text: "хранение", correct: false }, { text: "построение", correct: false }, { text: "соединение", correct: false } ] },
+    { question: "188. Какое сетевое оборудование не только улавливает и передает сигнал, но и обрабатывает эту техническую информацию, перенаправляя и распределяя поступающие потоки?", answers: [ { text: "активное", correct: true }, { text: "произвольное", correct: false }, { text: "сложное", correct: false }, { text: "внешнее", correct: false }, { text: "динамическое", correct: false } ] },
+    { question: "189. Какая единица информации содержит сведения о его источнике, цели, целостности и другие, позволяющие доставить эту информацию?", answers: [ { text: "пакет", correct: true }, { text: "блок", correct: false }, { text: "данные", correct: false }, { text: "сообщение", correct: false }, { text: "фрагмент", correct: false } ] },
+    { question: "190. Какой тип сетевого оборудования передает сетевой сигнал без усиления или преобразования и не получает питания от электрической сети или автономных источников?", answers: [ { text: "пассивное", correct: true }, { text: "активное", correct: false }, { text: "удаленное", correct: false }, { text: "сетевое", correct: false }, { text: "внешнее", correct: false } ] },
+    { question: "191. Какое устройство обеспечивает уплотнение информации в скоростных каналах связи?", answers: [ { text: "мультиплексор", correct: true }, { text: "мультфильм", correct: false }, { text: "медиаформ", correct: false }, { text: "видео плата", correct: false }, { text: "терминал", correct: false } ] },
+    { question: "192. Как обозначается логический модуль сборки- разборки пакета?", answers: [ { text: "PAD", correct: true }, { text: "DAA", correct: false }, { text: "ADD", correct: false }, { text: "MKK", correct: false }, { text: "PDD", correct: false } ] },
+    { question: "193. С помощью чего осуществляется передача информации?", answers: [ { text: "Кадра", correct: true }, { text: "Машины", correct: false }, { text: "Канала", correct: false }, { text: "Связи", correct: false }, { text: "Диска", correct: false } ] },
+    { question: "194. Что упаковывается в кадр и передаётся по физическому каналу?", answers: [ { text: "пакет", correct: true }, { text: "информация", correct: false }, { text: "канал", correct: false }, { text: "сообщение", correct: false }, { text: "система", correct: false } ] },
+    { question: "195. Что является задачей любого транспортного канала?", answers: [ { text: "передача пакетов", correct: true }, { text: "уменьшение ошибок", correct: false }, { text: "управление информацией", correct: false }, { text: "передача сети", correct: false }, { text: "нет ответа", correct: false } ] },
+    { question: "196. Что применяются в качестве конверторов для преобразования электрических сигналов в другие виды сигналов (оптические или радиосигналы) с целью использования других сред передачи информации?", answers: [ { text: "Трансивер", correct: true }, { text: "Адаптер", correct: false }, { text: "Сервер", correct: false }, { text: "Кабель", correct: false }, { text: "Сегмент", correct: false } ] },
+    { question: "197. Какое устройство выполняет буферизацию (временное хранение данных) и функцию сопряжения компьютера с сетевым кабелем?", answers: [ { text: "Сетевой адаптер", correct: true }, { text: "Сетевой хаб", correct: false }, { text: "Сетевой фильтр", correct: false }, { text: "Трансивер", correct: false }, { text: "Кабель", correct: false } ] },
+    { question: "198. Какое устройство предназначено для увеличения расстояния сетевого соединения путём повторения электрического сигнала «один в один»?", answers: [ { text: "репитер", correct: true }, { text: "адаптер", correct: false }, { text: "плата", correct: false }, { text: "слот", correct: false }, { text: "хаб", correct: false } ] },
+    { question: "199. Через какой сервер поступают по сети задания на печать?", answers: [ { text: "Сервер печати", correct: true }, { text: "Сервер хранения", correct: false }, { text: "Сервер приложений", correct: false }, { text: "Сервер файлов", correct: false }, { text: "Сервер коммуникаций", correct: false } ] },
+    { question: "200. На каком сервере развернуты внешние и внутренние корпоративные Web-сайты?", answers: [ { text: "Web-сервер", correct: true }, { text: "Server print", correct: false }, { text: "File server", correct: false }, { text: "Communication server", correct: false }, { text: "Archive server", correct: false } ] }
+];
+
+// МОДУЛЬ 5: ВОПРОСЫ 200 - 230
+const module5Questions = [
+    { question: "200. На каком сервере развернуты внешние и внутренние корпоративные Web-сайты?", answers: [ { text: "Web-сервер", correct: true }, { text: "Server print", correct: false }, { text: "File server", correct: false }, { text: "Communication server", correct: false }, { text: "Archive server", correct: false } ] },
+    { question: "201. При какой технологии сети используется специальный трехбайтовый фрейм?", answers: [ { text: "Token ring", correct: true }, { text: "Fiber data", correct: false }, { text: "Linux", correct: false }, { text: "Arc ring", correct: false }, { text: "Novellware", correct: false } ] },
+    { question: "202. Сколько раз MAC-адрес считывается из ПЗУ при инициализации сетевой карты?", answers: [ { text: "1", correct: true }, { text: "2", correct: false }, { text: "3", correct: false }, { text: "4", correct: false }, { text: "0", correct: false } ] },
+    { question: "203. На каком уровне модели OSI данные преобразуются в последовательность 0 и 1?", answers: [ { text: "Канальном", correct: true }, { text: "Транспортный", correct: false }, { text: "Прикладной", correct: false }, { text: "Сетевой", correct: false }, { text: "Физический", correct: false } ] },
+    { question: "204. На каком уровне модели OSI происходит преобразования данных из внутреннего формата компьютера в формат передачи?", answers: [ { text: "Представления", correct: true }, { text: "Сеансовом", correct: false }, { text: "Сетевом", correct: false }, { text: "Физическом", correct: false }, { text: "Канальном", correct: false } ] },
+    { question: "205. Какой протокол поддерживает передачу гипертекстов?", answers: [ { text: "HTTP", correct: true }, { text: "PPTP", correct: false }, { text: "SMTP", correct: false }, { text: "DHCP", correct: false }, { text: "SDHCP", correct: false } ] },
+    { question: "206. Как называются правила и технические процедуры, позволяющие компьютерам, объединенным в сеть, осуществлять соединение и обмен данными?", answers: [ { text: "Сетевые протоколы", correct: true }, { text: "Сетевые службы", correct: false }, { text: "Сетевая почта", correct: false }, { text: "Сетевая передача", correct: false }, { text: "Сетевые трафики", correct: false } ] },
+    { question: "207. Определите стандартный протокол почтового соединения?", answers: [ { text: "POP", correct: true }, { text: "FTP", correct: false }, { text: "TCP", correct: false }, { text: "FPX", correct: false }, { text: "UDP", correct: false } ] },
+    { question: "208. Какой протокол обеспечивает гарантированную доставку с установлением соединений в виде байтовых потоков?", answers: [ { text: "TCP", correct: true }, { text: "UDP", correct: false }, { text: "POP", correct: false }, { text: "FTP", correct: false }, { text: "SPX", correct: false } ] },
+    { question: "209. Какой протокол позволяет компьютерам автоматически получать IP- адрес и другие параметры, необходимые для работы в сети TCP/IP?", answers: [ { text: "DHCP", correct: true }, { text: "HTTP", correct: false }, { text: "XMPP", correct: false }, { text: "SCTP", correct: false }, { text: "SMTP", correct: false } ] },
+    { question: "210. На каком уровне модели OSI, пользователи сети получают доступ к ресурсам, таким как файлы, принтеры, гипертекстовые документы?", answers: [ { text: "Прикладном", correct: true }, { text: "Сетевом", correct: false }, { text: "Транспортном", correct: false }, { text: "Сеансовом", correct: false }, { text: "Канальном", correct: false } ] },
+    { question: "211. Определите протокол, задающий набор правил для передачи почты?", answers: [ { text: "SMTP", correct: true }, { text: "DHCP", correct: false }, { text: "HTTP", correct: false }, { text: "XMPP", correct: false }, { text: "SCTP", correct: false } ] },
+    { question: "212. Как называется семейство технологий пакетной передачи данных для компьютерных сетей?", answers: [ { text: "Ethernet", correct: true }, { text: "Telnet", correct: false }, { text: "Framenet", correct: false }, { text: "Arcnet", correct: false }, { text: "Intel", correct: false } ] },
+    { question: "213. Через какие интерфейсные устройства, уровни управления 1 и 2 связываются между собой?", answers: [ { text: "шину", correct: true }, { text: "кабели", correct: false }, { text: "структуру", correct: false }, { text: "схему", correct: false }, { text: "плату", correct: false } ] },
+    { question: "214. К какой группе устройств относят центральный процессор и внутреннюю память?", answers: [ { text: "центральной", correct: true }, { text: "внешней", correct: false }, { text: "машинной", correct: false }, { text: "виртуальной", correct: false }, { text: "операционной", correct: false } ] },
+    { question: "215. Для повышения производительности системы, какая ещё память используется?", answers: [ { text: "кэш-память", correct: true }, { text: "буф -память", correct: false }, { text: "статическая", correct: false }, { text: "динамическая", correct: false }, { text: "регенерация", correct: false } ] },
+    { question: "216. Как называется конструктивно оперативная память с однорядным расположением контактов?", answers: [ { text: "SIMM", correct: true }, { text: "SAMM", correct: false }, { text: "MISI", correct: false }, { text: "SMMM", correct: false }, { text: "PRINT", correct: false } ] },
+    { question: "217. Как называется системная плата внутри системного блока?", answers: [ { text: "материнская", correct: true }, { text: "системная", correct: false }, { text: "фирменная", correct: false }, { text: "большая", correct: false }, { text: "основная", correct: false } ] },
+    { question: "218. Как называются корпуса памяти с двухрядным расположением контактов?", answers: [ { text: "DIMM", correct: true }, { text: "BIMM", correct: false }, { text: "KIMM", correct: false }, { text: "ППЗУ", correct: false }, { text: "DAMM", correct: false } ] },
+    { question: "219. Какая память позволяет изменять или дополнять функции BIOS?", answers: [ { text: "флэш", correct: true }, { text: "кэш", correct: false }, { text: "буферная", correct: false }, { text: "постоянная", correct: false }, { text: "оперативная", correct: false } ] },
+    { question: "220. При какой сетевой технологии все абоненты разделяются на синхронные и асинхронные?", answers: [ { text: "FDDI", correct: true }, { text: "TelDI", correct: false }, { text: "Framenet", correct: false }, { text: "Arcnet", correct: false }, { text: "FAST", correct: false } ] },
+    { question: "221. Как называется устройство, которое обеспечивает уплотнение информации в скоростных каналах связи?", answers: [ { text: "мультиплексор", correct: true }, { text: "мультфильм", correct: false }, { text: "медиаформ", correct: false }, { text: "видео плата", correct: false }, { text: "терминал", correct: false } ] },
+    { question: "222. Как называется часть открытой системы, выполняющая некоторую функцию и входящая в состав того или иного уровня?", answers: [ { text: "Объект", correct: true }, { text: "Субъект", correct: false }, { text: "Компьютер", correct: false }, { text: "Система", correct: false }, { text: "Подсистема", correct: false } ] },
+    { question: "223. Какой код применяют для передачи данных в сети FDDI?", answers: [ { text: "4В/5B", correct: true }, { text: "1B/5B", correct: false }, { text: "01/02", correct: false }, { text: "4B/0B", correct: false }, { text: "11/0B", correct: false } ] },
+    { question: "224. При какой модуляции для логической единицы выбирается один уровень амплитуды синусоиды несущей частоты, а для логического нуля – другой?", answers: [ { text: "Амплитудной", correct: true }, { text: "Фазовой", correct: false }, { text: "Частотной", correct: false }, { text: "Регулярной", correct: false }, { text: "Гармонической", correct: false } ] },
+    { question: "225. Какая единица информации упаковывается в кадр и передаётся по физическому каналу?", answers: [ { text: "пакет", correct: true }, { text: "информация", correct: false }, { text: "канал", correct: false }, { text: "сообщение", correct: false }, { text: "система", correct: false } ] },
+    { question: "226. При какой модуляции значения 0 и 1 исходных данных передаются синусоидами с различной частотой - f0 и f1?", answers: [ { text: "Частотной", correct: true }, { text: "Амплитудной", correct: false }, { text: "Синусоидальной", correct: false }, { text: "Регулярной", correct: false }, { text: "Гармонической", correct: false } ] },
+    { question: "227. В каком устройстве восстановленный сигнал транслируется на все активные порты, кроме того, с которого пришёл сигнал?", answers: [ { text: "концентратор", correct: true }, { text: "трансивер", correct: false }, { text: "повторитель", correct: false }, { text: "адаптер", correct: false }, { text: "принтер", correct: false } ] },
+    { question: "228. При какой модуляции значениям данных 0 и 1 соответствуют сигналы одинаковой частоты, но с различной фазой?", answers: [ { text: "Фазовой", correct: true }, { text: "Аналоговой", correct: false }, { text: "Дискретной", correct: false }, { text: "Непрерывной", correct: false }, { text: "Частотной", correct: false } ] },
+    { question: "229. При каком кодировании дискретной информации применяют потенциальные и импульсные коды?", answers: [ { text: "Цифровом", correct: true }, { text: "Счетном", correct: false }, { text: "Непрерывном", correct: false }, { text: "Сверточном", correct: false }, { text: "Линейном", correct: false } ] },
+    { question: "230. Как называется организация вычислительной системы, когда выходная информация одного процессора является входом для следующего?", answers: [ { text: "конвейерной", correct: true }, { text: "сложной", correct: false }, { text: "внешней", correct: false }, { text: "командной", correct: false }, { text: "линейной", correct: false } ] },
+    { question: "231. Как называют код, где для представления логических единиц и нулей используется только значение потенциала сигнала?", answers: [ { text: "Потенциальным", correct: true }, { text: "Импульсным", correct: false }, { text: "Непрерывным", correct: false }, { text: "Дискретным", correct: false }, { text: "Цифровым", correct: false } ] },
+    { question: "232. Как называют коды, сигналы которых несут для передатчика указания о том, в какой момент времени нужно осуществлять распознавание очередного бита?", answers: [ { text: "Самосинхронизирующиеся", correct: true }, { text: "Самораспознаваемые", correct: false }, { text: "Самосинхронные", correct: false }, { text: "Самораспаковывающиеся", correct: false }, { text: "Самоопределяющиеся", correct: false } ] },
+    { question: "233. Как понимают механизм распознавания начала блока данных и его конца?", answers: [ { text: "Синхронизация", correct: true }, { text: "Сигнализация", correct: false }, { text: "Определение", correct: false }, { text: "Нумерация", correct: false }, { text: "Распознавание", correct: false } ] },
+    { question: "234. Регламентирование обмена точно специфицированными командами и ответами на них называется …………?", answers: [ { text: "Протоколом", correct: true }, { text: "Ответом", correct: false }, { text: "Откликом", correct: false }, { text: "Интерфейсом", correct: false }, { text: "Запросом", correct: false } ] },
+    { question: "235. Как называется установление соединения между взаимодействующими партнерами?", answers: [ { text: "Инициализация", correct: true }, { text: "Индексация", correct: false }, { text: "Индикация", correct: false }, { text: "Распознавание", correct: false }, { text: "Взаимодействие", correct: false } ] },
+    { question: "236. Механизм распределения, контроль и управление ограничениями доступа к данным называется ………?", answers: [ { text: "Разрешением", correct: true }, { text: "Спецификацией", correct: false }, { text: "Ограничением", correct: false }, { text: "Обеспечением", correct: false }, { text: "Восстановлением", correct: false } ] },
+    { question: "237. Какой сервер формирует платформу таких служб, как электронная почта, календарь и контакты, обеспечивая пользователям возможность связи и совместного доступа?", answers: [ { text: "Коммуникационный", correct: true }, { text: "Печати", correct: false }, { text: "Контактный", correct: false }, { text: "Приложений", correct: false }, { text: "Аутентификации", correct: false } ] },
+    { question: "238. На что указывает резкий перепад сигнала (фронт) при передаче по линиям связи?", answers: [ { text: "Синхронизацию", correct: true }, { text: "Определение", correct: false }, { text: "Распаковывание", correct: false }, { text: "Полярность", correct: false }, { text: "Дискретизацию", correct: false } ] },
+    { question: "239. При каком коде для кодирования 0 и 1 используется фронт импульса?", answers: [ { text: "Манчестерском", correct: true }, { text: "Биполярном", correct: false }, { text: "Без возвращения к нулю", correct: false }, { text: "Импульсном", correct: false }, { text: "Цифровом", correct: false } ] },
+    { question: "240. Как называется код, когда при передаче последовательности единиц сигнал не возвращается к нулю в течении такта?", answers: [ { text: "Без возвращения к нулю", correct: true }, { text: "С возвращением к нулю", correct: false }, { text: "Биполярный импульсный", correct: false }, { text: "Манчестерский", correct: false }, { text: "Потенциальный", correct: false } ] },
+    { question: "241. К чему приводит высокая скорость обмена и длинные последовательности единиц и нулей в потенциальном коде?", answers: [ { text: "Ошибке", correct: true }, { text: "Приему", correct: false }, { text: "Запросу", correct: false }, { text: "Задержке", correct: false }, { text: "Рассогласованию", correct: false } ] },
+    { question: "242. Как называются это программно – аппаратные устройства с 2 портами для объединения нескольких рабочих групп ЛВС, работающих с разными протоколами?", answers: [ { text: "мост", correct: true }, { text: "хаб", correct: false }, { text: "повторитель", correct: false }, { text: "концентратор", correct: false }, { text: "адаптер", correct: false } ] },
+    { question: "243. Какое устройство назначает отправку сразу, узнав пункт назначения (т.е. адрес узла)?", answers: [ { text: "switch", correct: true }, { text: "bridge", correct: false }, { text: "hard", correct: false }, { text: "repiter", correct: false }, { text: "hub", correct: false } ] },
+    { question: "244. Сколько длится импульс в биполярном импульсном коде?", answers: [ { text: "Половину такта", correct: true }, { text: "Половину импульса", correct: false }, { text: "Два такта", correct: false }, { text: "Период такта", correct: false }, { text: "Все время", correct: false } ] },
+    { question: "245. Сколько уровней сигнала используется в манчестерском коде?", answers: [ { text: "Два", correct: true }, { text: "Три", correct: false }, { text: "Один", correct: false }, { text: "Четыре", correct: false }, { text: "Пять", correct: false } ] },
+    { question: "246. В каких сетях все компьютеры равны в правах доступа к ресурсам друг друга?", answers: [ { text: "Одноранговых", correct: true }, { text: "Централизованных", correct: false }, { text: "Многоранговых", correct: false }, { text: "Серверных", correct: false }, { text: "Удаленных", correct: false } ] },
+    { question: "247. Для чего снижают уровень перекрестных наводок в кабеле?", answers: [ { text: "Повышения достоверности", correct: true }, { text: "Понижения шума", correct: false }, { text: "Увеличения скорости", correct: false }, { text: "Повышения устойчивости", correct: false }, { text: "Дублирования", correct: false } ] },
+    { question: "248. Какой адрес состоит из номера сети и номера узла?", answers: [ { text: "IP –адрес", correct: true }, { text: "Составной", correct: false }, { text: "Сетевой", correct: false }, { text: "Иерархический", correct: false }, { text: "Локальный", correct: false } ] },
+    { question: "249. Как называется структура обработки, когда отдельные процессоры выполняют различные уровни обработки?", answers: [ { text: "иерархической", correct: true }, { text: "сложной", correct: false }, { text: "простой", correct: false }, { text: "комбинированной", correct: false }, { text: "динамической", correct: false } ] },
+    { question: "250. Каким образом назначается номер узла в протоколе IP по отношению к локальному адресу узла?", answers: [ { text: "Независимо", correct: true }, { text: "Соответственно", correct: false }, { text: "Напрямую", correct: false }, { text: "Распределенно", correct: false }, { text: "Иерархически", correct: false } ] }
+];
+
+const module6Questions = [
+    { question: "251. Как называют сети, которые предоставляют свои сервисы большому количеству конечных абонентов, разбросанных по большой территории - в пределах области, региона, страны, континента?", answers: [ { text: "Глобальной", correct: true }, { text: "Территориальной", correct: false }, { text: "Базовой СПД", correct: false }, { text: "Главной ЭВМ", correct: false }, { text: "Основной узел", correct: false } ] },
+    { question: "252. Как называется устройство для одновременной передачи по компьютерной сети данных и голоса (или изображения)?", answers: [ { text: "мультиплексор", correct: true }, { text: "узел связи", correct: false }, { text: "коммутатор", correct: false }, { text: "устройство сопряжения", correct: false }, { text: "концентратор", correct: false } ] },
+    { question: "253. Как называется компания, которая оказывает платные услуги абонентам сети?", answers: [ { text: "провайдером", correct: true }, { text: "коммутатором", correct: false }, { text: "терминалом", correct: false }, { text: "сервисом", correct: false }, { text: "владельцем", correct: false } ] },
+    { question: "254. Какое устройство осуществляет фильтрацию сетевого трафика, разбирая сетевые (IP) адреса?", answers: [ { text: "Router", correct: true }, { text: "Basic line", correct: false }, { text: "Frame link", correct: false }, { text: "Network operator", correct: false }, { text: "Provider", correct: false } ] },
+    { question: "255. Какие устройства полностью преобразовывают весь поток данных, включая коды, форматы, методы управления и т.д.?", answers: [ { text: "Сетевой шлюз", correct: true }, { text: "Коммутационный канал", correct: false }, { text: "Терминальный хаб", correct: false }, { text: "Управляющий роутер", correct: false }, { text: "Вводной канал", correct: false } ] },
+    { question: "256. Какая модель является международным стандартом и определяет логическую декомпозицию сложной сети на уровни и стандартные интерфейсы между сетевыми функциями?", answers: [ { text: "OSI", correct: true }, { text: "FDDI", correct: false }, { text: "ETHERNET", correct: false }, { text: "SIP", correct: false }, { text: "UNIX", correct: false } ] },
+    { question: "257. Как называется канал с фиксированной полосой пропускания или фиксированной пропускной способностью, постоянно соединяющий двух абонентов?", answers: [ { text: "Выделенный", correct: true }, { text: "Цифровой", correct: false }, { text: "Быстрый", correct: false }, { text: "Терминальный", correct: false }, { text: "Абонентский", correct: false } ] },
+    { question: "258. Что характеризует IP-адрес?", answers: [ { text: "Сетевое соединение", correct: true }, { text: "Базовое соединение", correct: false }, { text: "Терминальное соединение", correct: false }, { text: "Ориентированное соединение", correct: false }, { text: "Удаленное соединение", correct: false } ] },
+    { question: "259. Какой адрес состоит из нескольких частей, например, имени машины, имени организации, имени домена?", answers: [ { text: "Символьный", correct: true }, { text: "Простой", correct: false }, { text: "Составной", correct: false }, { text: "Локальный", correct: false }, { text: "Сетевой", correct: false } ] },
+    { question: "260. Какова длина IP- адреса?", answers: [ { text: "4 байта", correct: true }, { text: "2 байта", correct: false }, { text: "1 байт", correct: false }, { text: "3 байта", correct: false }, { text: "5 байтов", correct: false } ] },
+    { question: "261. К какому классу относят IP-адреc, если адрес начинается с 0 и номер сети занимает один байт?", answers: [ { text: "Класс А", correct: true }, { text: "Класс В", correct: false }, { text: "Класс С", correct: false }, { text: "Класс D", correct: false }, { text: "Класс E", correct: false } ] },
+    { question: "262. Если все двоичные разряды IP-адреса равны 1, то куда рассылается пакет?", answers: [ { text: "Всем узлам той же сети", correct: true }, { text: "Удаленным узлам", correct: false }, { text: "Интерфейсному оборудованию", correct: false }, { text: "Локальным узлам", correct: false }, { text: "Абонентам сети", correct: false } ] },
+    { question: "263. Если первые два бита адреса равны 10, то к какому классу сеть относится?", answers: [ { text: "Класс В", correct: true }, { text: "Класс С", correct: false }, { text: "Класс Е", correct: false }, { text: "Класс D", correct: false }, { text: "Класс А", correct: false } ] },
+    { question: "264. Что важнее для мультимедийного трафика надежность или синхронность?", answers: [ { text: "Синхронность", correct: true }, { text: "Достаточность", correct: false }, { text: "Своевременность", correct: false }, { text: "Надежность", correct: false }, { text: "Доступность", correct: false } ] },
+    { question: "265. Какие типы данных содержат пакеты, кроме сообщения или файлов и определенных команд?", answers: [ { text: "коды управления сеансом", correct: true }, { text: "коды передачи по линиям", correct: false }, { text: "коды синхронизации", correct: false }, { text: "флаговые коды", correct: false }, { text: "целые типы", correct: false } ] },
+    { question: "266. От чего зависит формат и размер пакета?", answers: [ { text: "типа сети", correct: true }, { text: "системы сети", correct: false }, { text: "прикладного уровня", correct: false }, { text: "размера сети", correct: false }, { text: "передающей среды", correct: false } ] },
+    { question: "267. С какого уровня информация, которую надо переслать по сети, проходит все семь уровней?", answers: [ { text: "Прикладного", correct: true }, { text: "Сетевого", correct: false }, { text: "Кабельного", correct: false }, { text: "Физического", correct: false }, { text: "Канального", correct: false } ] },
+    { question: "268. На каком уровне модели OSI исходный блок данных делится на пакеты?", answers: [ { text: "Транспортном", correct: true }, { text: "Физическом", correct: false }, { text: "Сетевом", correct: false }, { text: "Канальном", correct: false }, { text: "Прикладном", correct: false } ] },
+    { question: "269. Что может быть двухпроводной линией, которая пропускает электрический сигнал, или стекловолокном, которое переносит информацию посредством модулированного светового луча?", answers: [ { text: "физический канал", correct: true }, { text: "физический хаб", correct: false }, { text: "устройство сопряжения", correct: false }, { text: "концентратор", correct: false }, { text: "передатчик данных", correct: false } ] },
+    { question: "270. Через что передается запрос на процессор на выполнение некоторых действий при автономной работе компьютера?", answers: [ { text: "Локальную шину", correct: true }, { text: "Локальный адрес", correct: false }, { text: "Удаленный сервер", correct: false }, { text: "Базовую СПД", correct: false }, { text: "Терминалы ввода", correct: false } ] },
+    { question: "271. При каком методе доступа, если линия занята, попытка передачи откладывается?", answers: [ { text: "Вероятностном", correct: true }, { text: "Детерминированном", correct: false }, { text: "Возможном", correct: false }, { text: "Достаточном", correct: false }, { text: "Избыточном", correct: false } ] },
+    { question: "272. Какие знаки стоят в поле номера сети, если узел принадлежит той же самой сети, что и узел, который отправил пакет?", answers: [ { text: "Нули", correct: true }, { text: "Единицы", correct: false }, { text: "Нуль и один", correct: false }, { text: "Пробелы", correct: false }, { text: "Две единицы", correct: false } ] },
+    { question: "273. Какой кабель имеет 8 медных проводников, перевитых друг с другом, и хорошую плотную изоляцию из поливинилхлорида?", answers: [ { text: "Витая пара", correct: true }, { text: "Короткая пара", correct: false }, { text: "Коаксиальная пара", correct: false }, { text: "Оптоволокно", correct: false }, { text: "Сетевая пара", correct: false } ] },
+    { question: "274. Какой адрес используется на прикладном уровне, например, в протоколах FTP или Telnet?", answers: [ { text: "DNS", correct: true }, { text: "OPS", correct: false }, { text: "DNN", correct: false }, { text: "IP", correct: false }, { text: "POP", correct: false } ] },
+    { question: "275. Как иначе называются адреса группы класса D?", answers: [ { text: "Multicast", correct: true }, { text: "Multistation", correct: false }, { text: "Access", correct: false }, { text: "Multiaccess", correct: false }, { text: "Adress", correct: false } ] },
+    { question: "276. По какому адресу рассылается пакет, если все двоичные разряды IP-адреса равны 1?", answers: [ { text: "Всем узлам той же сети", correct: true }, { text: "Коммутационным узлам", correct: false }, { text: "Адресатам группы", correct: false }, { text: "Адресу назначения", correct: false }, { text: "Резервированному адресу", correct: false } ] },
+    { question: "277. Какой адрес не делится на поля номера сети и узла и обрабатывается маршрутизатором особым образом?", answers: [ { text: "Групповой", correct: true }, { text: "Личный", correct: false }, { text: "IP адрес", correct: false }, { text: "Символьный", correct: false }, { text: "MAC - адрес", correct: false } ] },
+    { question: "278. При каких соединениях используются радиоволны, сигналы инфракрасного диапазона и СВЧ-волны?", answers: [ { text: "беспроводных", correct: true }, { text: "проводных", correct: false }, { text: "сетевых", correct: false }, { text: "адресных", correct: false }, { text: "телефонных", correct: false } ] },
+    { question: "279. Какая процедура необходима для дискретных электрических сигналов при передаче через аналоговый канал?", answers: [ { text: "модуляция", correct: true }, { text: "сжатие", correct: false }, { text: "соединение", correct: false }, { text: "уменьшение", correct: false }, { text: "обработка", correct: false } ] },
+    { question: "280. Как называются устройства сети, которые ориентируются на протокольный стек?", answers: [ { text: "Маршрутизатор", correct: true }, { text: "Коммутатор", correct: false }, { text: "Концентратор", correct: false }, { text: "Узел связи", correct: false }, { text: "Интерфейс", correct: false } ] },
+    { question: "281. Какое понятие описывает режим распространения световых лучей во внутреннем сердечнике кабеля?", answers: [ { text: "Мода", correct: true }, { text: "Код", correct: false }, { text: "Пара", correct: false }, { text: "Свет", correct: false }, { text: "Диод", correct: false } ] },
+    { question: "282. Если разделяется время работы канала для одновременной передачи нескольких потоков данных, то это называется ….…..?", answers: [ { text: "мультиплексированием", correct: true }, { text: "манипулированием", correct: false }, { text: "установлением", correct: false }, { text: "кодированием", correct: false }, { text: "фазоманипулированием", correct: false } ] },
+    { question: "283. При какой технологии маркер с данными проходит по кольцу, пока не достигнет адресуемого узла, который снимает данные и формирует подтверждение о получении данных?", answers: [ { text: "Token Ring", correct: true }, { text: "Token Data", correct: false }, { text: "Token Start", correct: false }, { text: "Token Bus", correct: false }, { text: "Token Gate", correct: false } ] },
+    { question: "284. Какая служба предназначена для автоматического поиска IP-адреса по известному символьному имени узла?", answers: [ { text: "DNS", correct: true }, { text: "ARP", correct: false }, { text: "POP", correct: false }, { text: "HTTP", correct: false }, { text: "IP", correct: false } ] },
+    { question: "285. Куда отображаются DNS имена компьютеров требующих статической конфигурации своих таблиц?", answers: [ { text: "В IP-адрес", correct: true }, { text: "На сервер", correct: false }, { text: "Клиенту", correct: false }, { text: "В узел", correct: false }, { text: "В MAC", correct: false } ] },
+    { question: "286. По отношению к чему имя домена идентифицирует его положение в этой базе данных DNS?", answers: [ { text: "Родительскому домену", correct: true }, { text: "Родительскому запросу", correct: false }, { text: "Родительской машине", correct: false }, { text: "Родительской структуре", correct: false }, { text: "Родительскому узлу", correct: false } ] },
+    { question: "287. Бывают типы кадров информационные и ……?", answers: [ { text: "Управляющие", correct: true }, { text: "Открывающие", correct: false }, { text: "Закрывающие", correct: false }, { text: "Первичные", correct: false }, { text: "Вторичные", correct: false } ] },
+    { question: "288. При какой технологии сети строятся на основе двух оптоволоконных колец, которые образуют основной и резервный пути передачи данных между узлами сети?", answers: [ { text: "FDDI", correct: true }, { text: "FI I I", correct: false }, { text: "Token Net", correct: false }, { text: "АRCnet", correct: false }, { text: "FIDO", correct: false } ] },
+    { question: "289. При адресации DNS для кого назначаются домены верхнего уровня?", answers: [ { text: "Для страны", correct: true }, { text: "Для компьютера", correct: false }, { text: "Для узла", correct: false }, { text: "Для сети", correct: false }, { text: "Для компании", correct: false } ] },
+    { question: "290. Как называется стандартные правила сетей, с обязательными характеристиками элементов и процедурами?", answers: [ { text: "Протокол", correct: true }, { text: "Взаимосвязь", correct: false }, { text: "Структура", correct: false }, { text: "Система", correct: false }, { text: "Схема", correct: false } ] },
+    { question: "291. Как называют устройство, которое делит среду передачи на части и передает информацию из одного сегмента в другой?", answers: [ { text: "Мост", correct: true }, { text: "Порт", correct: false }, { text: "Сеть", correct: false }, { text: "Блок", correct: false }, { text: "Трафик", correct: false } ] },
+    { question: "292. Кто задает границы пула назначаемых адресов при конфигурировании DHCP-сервера?", answers: [ { text: "администратор", correct: true }, { text: "директор", correct: false }, { text: "оператор", correct: false }, { text: "редиректор", correct: false }, { text: "программист", correct: false } ] },
+    { question: "293. При какой технологии в случае какого-либо вида отказа, когда часть первичного кольца не может передавать данные, первичное кольцо объединяется со вторичным, происходит Wrap?", answers: [ { text: "FDDI", correct: true }, { text: "FI I I", correct: false }, { text: "Token Net", correct: false }, { text: "АRCnet", correct: false }, { text: "FIDO", correct: false } ] },
+    { question: "294. Как называется клиентская программа, распознающая и перенаправляющая запросы?", answers: [ { text: "Редиректор", correct: true }, { text: "Сервер", correct: false }, { text: "Контроллер", correct: false }, { text: "Драйвер", correct: false }, { text: "Процессор", correct: false } ] },
+    { question: "295. В функции какого устройства входит направление передаваемой информации одному или всем компьютерам сети?", answers: [ { text: "Концентратор", correct: true }, { text: "Комбинатор", correct: false }, { text: "Коммутатор", correct: false }, { text: "Компьютер", correct: false }, { text: "Переходник", correct: false } ] },
+    { question: "296. Как называется программа, управляющая контроллером соответствующего устройства?", answers: [ { text: "Драйвером", correct: true }, { text: "Провайдером", correct: false }, { text: "Конвертом", correct: false }, { text: "Портом", correct: false }, { text: "Приемником", correct: false } ] },
+    { question: "297. В протоколе HDLC, если источником информации является первичная машина, то взаимодействие со вторичной осуществляется с помощью ………?", answers: [ { text: "Команд", correct: true }, { text: "Пусков", correct: false }, { text: "Стартов", correct: false }, { text: "Опроса", correct: false }, { text: "Теста", correct: false } ] },
+    { question: "298. При какой технологии происходит конвертация голосовой связи в пакеты данных?", answers: [ { text: "IP-телефония", correct: true }, { text: "IP - соединение", correct: false }, { text: "IP логика", correct: false }, { text: "IP конвертация", correct: false }, { text: "IP протокол", correct: false } ] },
+    { question: "299. Какие сервера являются основной частью SIP-сети, отвечают за маршрутизацию сообщений, а также аутентификацию и авторизацию пользователей?", answers: [ { text: "Proxy", correct: true }, { text: "Buffer", correct: false }, { text: "Provider", correct: false }, { text: "Hardware", correct: false }, { text: "Provence", correct: false } ] },
+    { question: "300. Какой протокол непосредственного участия в передаче голоса, сообщений и видео не принимает, он отвечает только за установление связи между абонентами?", answers: [ { text: "SIP", correct: true }, { text: "POP", correct: false }, { text: "RIP", correct: false }, { text: "ARP", correct: false }, { text: "PIP", correct: false } ] }
+];
+
+// Массив всех квизов
+const allQuizzes = [
+    { title: "Модуль 1 (Вопросы 1-50)", questions: module1Questions },
+    { title: "Модуль 2 (Вопросы 51-100)", questions: module2Questions },
+    { title: "Модуль 3 (Вопросы 101-150)", questions: module3Questions },
+    { title: "Модуль 4 (Вопросы 151-200)", questions: module4Questions },
+    { title: "Модуль 5 (Вопросы 200-250)", questions: module5Questions },
+    { title: "Модуль 6 (Вопросы 251-300)", questions: module6Questions }
+];
+
+// --- ЭЛЕМЕНТЫ DOM ---
+const startScreen = document.getElementById('start-screen');
+const quizScreen = document.getElementById('quiz-screen');
+const resultScreen = document.getElementById('result-screen');
+const quizTitle = document.getElementById('quiz-title');
+const questionContainer = document.getElementById('question-container');
+const answerButtons = document.getElementById('answer-buttons');
+const progressBar = document.getElementById('progress-bar');
+const progressText = document.getElementById('progress-text');
+const restartSectionBtn = document.getElementById('restart-section-btn');
+const resultText = document.getElementById('result-text');
+const correctCountEl = document.getElementById('correct-count');
+const incorrectCountEl = document.getElementById('incorrect-count');
+const accuracyPercentEl = document.getElementById('accuracy-percent');
+const incorrectQuestionsListEl = document.getElementById('incorrect-questions-list');
+const incorrectListEl = document.getElementById('incorrect-list');
+
+// --- ПЕРЕМЕННЫЕ СОСТОЯНИЯ КВИЗА ---
+let currentQuizSection = 0;
+let currentQuestions = [];
+let questionsToAsk = [];
+let incorrectlyAnswered = [];
+let currentQuestion;
+let correctlyAnsweredCount = 0;
+let totalQuestionCount = 0;
+let finallyIncorrectQuestions = []; 
+let questionAttempts = {}; 
+
+// --- ФУНКЦИИ ---
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+}
+
+function startQuizSection(sectionNumber) {
+    currentQuizSection = sectionNumber - 1;
+    currentQuestions = [...allQuizzes[currentQuizSection].questions];
+    
+    startScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
+    quizScreen.classList.remove('hidden');
+    
+    quizTitle.textContent = allQuizzes[currentQuizSection].title;
+
+    currentQuestions.forEach(q => {
+        q.answeredCorrectly = false;
+        q.id = q.question; 
+    });
+    
+    questionsToAsk = [...currentQuestions];
+    
+    // Перемешиваем сами вопросы
+    shuffleArray(questionsToAsk);
+    
+    incorrectlyAnswered = [];
+    finallyIncorrectQuestions = [];
+    questionAttempts = {};
+    correctlyAnsweredCount = 0;
+    totalQuestionCount = currentQuestions.length;
+    
+    updateProgressBar();
+    showNextQuestion();
+}
+
+function goBackToMenu() {
+    startScreen.classList.remove('hidden');
+    quizScreen.classList.add('hidden');
+    resultScreen.classList.add('hidden');
+}
+
+function updateProgressBar() {
+    const progressPercentage = (correctlyAnsweredCount / totalQuestionCount) * 100;
+    progressBar.style.width = `${progressPercentage}%`;
+    progressText.innerText = `Прогресс: ${correctlyAnsweredCount} / ${totalQuestionCount}`;
+}
+
+function showNextQuestion() {
+    questionContainer.classList.add('fade-out');
+    answerButtons.classList.add('fade-out');
+    
+    setTimeout(() => {
+        resetState();
+        
+        if (questionsToAsk.length === 0) {
+            if (incorrectlyAnswered.length === 0) {
+                endQuiz();
+                return;
+            } else {
+                questionsToAsk = [...incorrectlyAnswered];
+                shuffleArray(questionsToAsk);
+                incorrectlyAnswered = [];
+            }
+        }
+        
+        currentQuestion = questionsToAsk.shift();
+        questionContainer.innerText = currentQuestion.question;
+
+        // Копируем варианты ответов и ПЕРЕМЕШИВАЕМ ИХ для отображения на экране
+        const shuffledAnswers = [...currentQuestion.answers];
+        shuffleArray(shuffledAnswers);
+
+        shuffledAnswers.forEach((answer, index) => {
+            const button = document.createElement('button');
+            button.innerText = answer.text;
+            button.classList.add('btn', 'btn-animate-in', 'color-' + (index % 5));
+            button.style.animationDelay = `${index * 0.1}s`;
+            if (answer.correct) {
+                button.dataset.correct = true;
+            }
+            button.addEventListener('click', selectAnswer);
+            answerButtons.appendChild(button);
+        });
+
+        questionContainer.classList.remove('fade-out');
+        answerButtons.classList.remove('fade-out');
+        
+    }, 400); 
+}
+
+function resetState() {
+    while (answerButtons.firstChild) {
+        answerButtons.removeChild(answerButtons.firstChild);
+    }
+}
+
+function selectAnswer(e) {
+    const selectedBtn = e.target;
+    const isCorrect = selectedBtn.dataset.correct === 'true';
+
+    Array.from(answerButtons.children).forEach(button => {
+        button.disabled = true;
+        button.classList.remove('btn-animate-in');
+    });
+
+    if (isCorrect) {
+        selectedBtn.classList.add('correct');
+        if (!currentQuestion.answeredCorrectly) {
+            correctlyAnsweredCount++;
+            currentQuestion.answeredCorrectly = true;
+            updateProgressBar();
+        }
+    } else {
+        selectedBtn.classList.add('incorrect');
+        
+        const questionId = currentQuestion.id;
+        questionAttempts[questionId] = (questionAttempts[questionId] || 0) + 1;
+        
+        if (questionAttempts[questionId] < 3) {
+            incorrectlyAnswered.push(currentQuestion);
+        } else {
+            finallyIncorrectQuestions.push(currentQuestion);
+        }
+        
+        Array.from(answerButtons.children).forEach(button => {
+            if (button.dataset.correct === 'true') {
+                button.classList.add('correct');
+            }
+        });
+    }
+    
+    setTimeout(showNextQuestion, 1800);
+}
+
+function endQuiz() {
+    quizScreen.classList.add('hidden');
+    resultScreen.classList.remove('hidden');
+    
+    const totalQuestions = totalQuestionCount;
+    const correctAnswers = correctlyAnsweredCount;
+    const incorrectAnswers = finallyIncorrectQuestions.length;
+    const accuracy = Math.round((correctAnswers / totalQuestions) * 100);
+    
+    correctCountEl.textContent = correctAnswers;
+    incorrectCountEl.textContent = incorrectAnswers;
+    accuracyPercentEl.textContent = accuracy + '%';
+    
+    let resultMessage = `Модуль "${allQuizzes[currentQuizSection].title}" завершен!\n\n`;
+    resultMessage += `Из ${totalQuestions} вопросов вы ответили правильно на ${correctAnswers}.`;
+    
+    if (incorrectAnswers === 0) {
+        resultMessage = "🎉 Поздравляем! Вы ответили правильно на все вопросы!";
+    } else {
+        resultMessage += `\nНа ${incorrectAnswers} вопросов вы ответили неправильно после всех попыток.`;
+    }
+    
+    resultText.textContent = resultMessage;
+    
+    if (finallyIncorrectQuestions.length > 0) {
+        incorrectQuestionsListEl.classList.remove('hidden');
+        incorrectListEl.innerHTML = '';
+        
+        finallyIncorrectQuestions.forEach(question => {
+            const li = document.createElement('li');
+            li.textContent = question.question;
+            li.style.marginBottom = '5px';
+            incorrectListEl.appendChild(li);
+        });
+    } else {
+        incorrectQuestionsListEl.classList.add('hidden');
+    }
+    
+    restartSectionBtn.onclick = function() {
+        startQuizSection(currentQuizSection + 1);
+    };
+}
+</script>
+</body>
+</html>
